@@ -4,6 +4,27 @@ import Orange
 import datasets
 import nbdisc
 
+def select_random_features(data, n, random_generator=Orange.misc.Random(0)):
+    """
+    Returns new data table with n random features selected from the given table.
+    """
+    features_number = len(data.domain)
+    if n >= features_number:
+        return data
+    indices = range(features_number-1)
+    for i in range(n):
+        del indices[random(len(indices))]
+    print(indices + [features_number-1])
+    return data.select(indices + [features_number-1])
+
+def select_features_proportion(data, p, random_generator=Orange.misc.Random(0)):
+    """
+    Returns new data table with n random features selected, where
+    n = len(data) * p.
+    """
+    return select_random_features(data, int(math.ceil(len(data) * p)),
+                                  random_generator)
+         
 def split_dataset(data, p):
     """
     Splits the data table according to given proportion.
@@ -67,6 +88,7 @@ data_sets = datasets.get_datasets()
 learning_proportion = 0.7
 learn_subsets = [1.0, 0.3, 0.2, 0.1, 0.075, 0.05]
 subset_sample_size = 10
+feature_subsets = [1.0, 0.8, 0.6, 0.4, 0.2]
 
 learners = [#nbdisc.Learner(name="bayes"),
             Orange.classification.bayes.NaiveLearner(name="bayes"),
@@ -85,11 +107,14 @@ for data_file in data_sets:
     results[data_file] = {}
     learn_data, test_data = split_dataset_random(data, learning_proportion)
     for sp in learn_subsets:
-        dict_list = [{} for x in range(subset_sample_size)]
-        for r in dict_list:
-            learn_data_subset, _n = split_dataset_random(data, sp)
-            evaluate_learners(learners, learn_data_subset, test_data, r)
-        results[data_file][sp] = dict_recur_mean(dict_list)
+        results[data_file][sp] = {}
+        sp_data_subset, _n = split_dataset_random(data, sp)
+        for fs in feature_subsets:
+            fs_dict_list = [{} for x in range(subset_sample_size)]
+            for r in fs_dict_list:
+                fs_data_subset = select_features_proportion(sp_data_subset, fs)
+                evaluate_learners(learners, fs_data_subset, test_data, r)
+            results[data_file][sp][fs] = dict_recur_mean(fs_dict_list)
 
 
 # Printing results
@@ -97,6 +122,9 @@ for data_file in data_sets:
     print
     print("%s:" % data_file)
     for sp in learn_subsets:
-        print("%f:" % sp)
-        for l in learners:
-            print "%s %5.3f+-%5.3f" % ((l.name,) + results[data_file][sp][l.name]["CA"])
+        print
+        print("Data subset %f:" % sp)
+        for fs in feature_subsets:
+            print("Feature subset %f:" % fs)
+            for l in learners:
+                print "%s %5.3f+-%5.3f" % ((l.name,) + results[data_file][sp][fs][l.name]["CA"])
