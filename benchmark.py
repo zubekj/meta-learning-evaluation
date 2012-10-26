@@ -8,21 +8,21 @@ def select_random_features(data, n, random_generator=Orange.misc.Random(0)):
     """
     Returns new data table with n random features selected from the given table.
     """
-    features_number = len(data.domain)
+    features_number = len(data.domain) - 1
     if n >= features_number:
         return data
-    indices = range(features_number-1)
-    for i in range(n):
+    indices = range(features_number)
+    for i in range(features_number - n):
         del indices[random(len(indices))]
-    print(indices + [features_number-1])
-    return data.select(indices + [features_number-1])
+    print(indices + [features_number])
+    return data.select(indices + [features_number])
 
 def select_features_proportion(data, p, random_generator=Orange.misc.Random(0)):
     """
     Returns new data table with n random features selected, where
     n = len(data) * p.
     """
-    return select_random_features(data, int(math.ceil(len(data) * p)),
+    return select_random_features(data, int(math.ceil(len(data.domain) * p)),
                                   random_generator)
          
 def split_dataset(data, p):
@@ -102,6 +102,7 @@ random = Orange.misc.Random(0)
 
 results = {}
 
+# Levels: 1. Dataset, 2. Learn subset, 3. Feature subset, 4. Learning algorithm
 for data_file in data_sets:
     data = Orange.data.Table(data_file)
     results[data_file] = {}
