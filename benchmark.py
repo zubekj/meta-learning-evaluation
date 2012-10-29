@@ -4,26 +4,27 @@ import Orange
 import datasets
 import nbdisc
 
-def select_random_features(data, n, random_generator=Orange.misc.Random(0)):
+def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
     Returns new data table with n random features selected from the given table.
     """
     features_number = len(data.domain) - 1
     if n >= features_number:
-        return data
+        return (data, test_data)
     indices = range(features_number)
     for i in range(features_number - n):
         del indices[random(len(indices))]
-    print(indices + [features_number])
-    return data.select(indices + [features_number])
+    sel = indices + [features_number]
+    return (data.select(sel), test_data.select(sel))
 
-def select_features_proportion(data, p, random_generator=Orange.misc.Random(0)):
+def select_features_proportion(data, test_data, p,
+        random_generator=Orange.misc.Random(0)):
     """
     Returns new data table with n random features selected, where
     n = len(data) * p.
     """
-    return select_random_features(data, int(math.ceil(len(data.domain) * p)),
-                                  random_generator)
+    return select_random_features(data, test_data,
+            int(math.ceil(len(data.domain) * p)), random_generator)
          
 def split_dataset(data, p):
     """
@@ -113,8 +114,9 @@ for data_file in data_sets:
         for fs in feature_subsets:
             fs_dict_list = [{} for x in range(subset_sample_size)]
             for r in fs_dict_list:
-                fs_data_subset = select_features_proportion(sp_data_subset, fs)
-                evaluate_learners(learners, fs_data_subset, test_data, r)
+                (fs_data_subset, test_data_subset) = \
+                    select_features_proportion(sp_data_subset, test_data, fs)
+                evaluate_learners(learners, fs_data_subset, test_data_subset, r)
             results[data_file][sp][fs] = dict_recur_mean(fs_dict_list)
 
 
