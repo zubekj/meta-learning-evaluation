@@ -1,8 +1,8 @@
 def get_datasets():
     return [
-#    "iris",
+    "iris",
 #    "adult",
-    "anneal",
+#    "anneal",
 #    "audiology",
 #    "auto-mpg",
 #    "balance-scale",
