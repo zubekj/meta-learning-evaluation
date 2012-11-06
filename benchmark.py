@@ -58,7 +58,7 @@ data_sets = datasets.get_datasets()
 
 learning_proportion = 0.7
 #learn_subsets = [1.0, 0.3, 0.2, 0.1, 0.075, 0.05]
-learn_subsets = [x * 0.1 for x in range(1, 10)]
+learn_subsets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 sample_size = 10
 #feature_subsets = [1.0, 0.8, 0.6, 0.4, 0.2]
 feature_subsets = [1.0]
@@ -68,7 +68,7 @@ learners = [#nbdisc.Learner(name="bayes"),
             Orange.classification.knn.kNNLearner(name="knn"),
             Orange.classification.svm.MultiClassSVMLearner(name="svm"),
             Orange.classification.tree.SimpleTreeLearner(name="tree"),
-            Orange.classification.neural.NeuralNetworkLearner(),
+            Orange.classification.neural.NeuralNetworkLearner(name="neural_net"),
             Orange.classification.majority.MajorityLearner(name="majority")]
 
 random = Orange.misc.Random(0)
