@@ -1,7 +1,6 @@
 import sys
 import math
 import cPickle
-import Orange
 
 if len(sys.argv) > 1:
     data_set = sys.argv[1]

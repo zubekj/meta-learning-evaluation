@@ -17,3 +17,7 @@ lines(t$Data_subset, t$neural_net, col=plot_colors[6])
 title(xlab="Data subset size")
 title(ylab="Accuracy")
 legend(0.1, max_acc, names(t[,-1]), cex=0.8, col=plot_colors, lty=1)
+
+split_path = unlist(strsplit(args[1], "/"))
+split_filename = unlist(strsplit(split_path[length(split_path)], "\\."))
+title(main=split_filename[[1]])
