@@ -1,8 +1,9 @@
 import sys
 import math
+import random
 import cPickle
 import Orange
-import Orange.classification.neural
+import neural
 from Orange.evaluation.testing import learn_and_test_on_test_data
 
 import datasets
@@ -16,7 +17,7 @@ def select_random_features(data, test_data, n, random_generator=Orange.misc.Rand
         return (data, test_data)
     indices = range(features_number)
     for i in range(features_number - n):
-        del indices[random(len(indices))]
+        del indices[random_generator(len(indices))]
     sel = indices + [features_number]
     return (data.select(sel), test_data.select(sel))
 
@@ -47,7 +48,7 @@ def split_dataset_random(data, p, random_generator=Orange.misc.Random(0)):
     indices_1 = range(l)
     indices_2 = []
     for i in range(int(math.floor(p*l))):
-        idx = random(len(indices_1))
+        idx = random_generator(len(indices_1))
         indices_2.append(indices_1[idx])
         del indices_1[idx]
     t1 = data.get_items_ref(indices_1)
@@ -63,15 +64,16 @@ sample_size = 10
 #feature_subsets = [1.0, 0.8, 0.6, 0.4, 0.2]
 feature_subsets = [1.0]
 
-learners = [#nbdisc.Learner(name="bayes"),
-            Orange.classification.bayes.NaiveLearner(name="bayes"),
-            Orange.classification.knn.kNNLearner(name="knn"),
-            Orange.classification.svm.MultiClassSVMLearner(name="svm"),
-            Orange.classification.tree.SimpleTreeLearner(name="tree"),
-            Orange.classification.neural.NeuralNetworkLearner(name="neural_net"),
-            Orange.classification.majority.MajorityLearner(name="majority")]
+rand = Orange.misc.Random(0)
 
-random = Orange.misc.Random(0)
+learners = [#nbdisc.Learner(name="bayes"),
+            #Orange.classification.bayes.NaiveLearner(name="bayes"),
+            #Orange.classification.knn.kNNLearner(name="knn"),
+            #Orange.classification.svm.MultiClassSVMLearner(name="svm"),
+            #Orange.classification.tree.SimpleTreeLearner(name="tree"),
+            neural.NeuralNetworkLearner(name="neural_net", rand=random.Random(1)),
+            #Orange.classification.majority.MajorityLearner(name="majority")
+            ]
 
 results = {}
 
@@ -82,14 +84,14 @@ else:
 
 # Levels: 1. Learn subset, 2. Feature subset, 3. Learning algorithm
 data = Orange.data.Table(data_file)
-learn_data, test_data = split_dataset_random(data, learning_proportion)
+learn_data, test_data = split_dataset_random(data, learning_proportion, rand)
 for sp in learn_subsets:
     results[sp] = {}
     for fs in feature_subsets:
         results[sp][fs] = {}
         for i in range(sample_size):
             sp_ldata, _n = split_dataset_random(data, sp)
-            fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, random)
+            fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, rand)
             results[sp][fs][i] = learn_and_test_on_test_data(learners, fs_ldata, fs_tdata)
 
 learners_names = map(lambda x: x.name, learners)
