@@ -1,0 +1,37 @@
+\documentclass[a4paper]{article}
+\usepackage[a4paper]{geometry}
+\usepackage{graphicx}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\newgeometry{top=1cm,bottom=1cm}
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[height=.24\textheight]{car.pdf} & \includegraphics[height=.24\textheight]{glass.pdf}\\
+\includegraphics[height=.24\textheight]{iris.pdf} & \includegraphics[height=.24\textheight]{wdbc.pdf}\\
+\includegraphics[height=.24\textheight]{monks-1.pdf} & \includegraphics[height=.24\textheight]{wine.pdf}\\
+\includegraphics[height=.24\textheight]{vehicle.pdf} & \includegraphics[height=.24\textheight]{breast-cancer-wisconsin.pdf}\\
+\end{tabular}
+\end{center}
+\restoregeometry
+
+Test procedure:
+\begin{enumerate}
+\item Each dataset was split randomly into training set and test set with a proportion 0.7.
+\item From the training set smaller subsets were drawn randomly without replacement.
+\item Classifiers learned on small training subsets and were tested on the same test set.
+\end{enumerate}
+
+Classifiers:
+\begin{itemize}
+\item Orange.classification.bayes.NaiveLearner(name="bayes")
+\item Orange.classification.knn.kNNLearner(name="knn")
+\item Orange.classification.svm.MultiClassSVMLearner(name="svm")
+\item Orange.classification.tree.SimpleTreeLearner(name="tree")
+\item Orange.classification.neural.NeuralNetworkLearner(name="neural\_net")
+\item Orange.classification.majority.MajorityLearner(name="majority")
+\end{itemize}
+
+\end{document}
