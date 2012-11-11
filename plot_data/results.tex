@@ -12,8 +12,9 @@
 Test procedure:
 \begin{enumerate}
 \item Each dataset was split randomly into training set and test set with a proportion 0.7.
-\item From the training set smaller subsets were drawn randomly without replacement.
-\item Classifiers learned on small training subsets and were tested on the same test set.
+\item From the training set smaller subsets were drawn randomly without replacement. The
+procedure was repeated 10 times and mean peformance was calculated.
+\item Classifiers learned on different training subsets and were all tested on the same test set.
 \end{enumerate}
 
 Classifiers:
@@ -26,20 +27,39 @@ Classifiers:
 \item Orange.classification.majority.MajorityLearner(name="majority")
 \end{itemize}
 
-\newgeometry{left=1.3cm,right=0.5cm,top=0.5cm,bottom=0.5cm}
+\newgeometry{left=1.3cm,right=0.5cm,top=0.5cm,bottom=1cm}
 \begin{landscape}
-%\vspace*{-5em}\hspace*{-12em}
+\begin{center}
+{\Large\bf Accuracy}\\
 \begin{tabular}{cc}
 \input{car.tex} & \input{glass.tex}\\
 \input{iris.tex} & \input{wdbc.tex}\\
 \end{tabular}
+\end{center}
 \newpage
-%\vspace*{-5em}\hspace*{-12em}
+\begin{center}
+{\Large\bf Accuracy}\\
 \begin{tabular}{cc}
 \input{monks-1.tex} & \input{wine.tex}\\
 \input{vehicle.tex} & \input{breast-cancer-wisconsin.tex}\\
 \end{tabular}
+\end{center}
+\newpage
+\begin{center}
+{\Large\bf Accuracy standard error}\\
+\begin{tabular}{cc}
+\input{car_error.tex} & \input{glass_error.tex}\\
+\input{iris_error.tex} & \input{wdbc_error.tex}\\
+\end{tabular}
+\end{center}
+\newpage
+\begin{center}
+{\Large\bf Accuracy standard error}\\
+\begin{tabular}{cc}
+\input{monks-1_error.tex} & \input{wine_error.tex}\\
+\input{vehicle_error.tex} & \input{breast-cancer-wisconsin_error.tex}\\
+\end{tabular}
+\end{center}
 \end{landscape}
 \restoregeometry
-
 \end{document}
