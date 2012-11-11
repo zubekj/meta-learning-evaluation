@@ -1,21 +1,13 @@
 \documentclass[a4paper]{article}
 \usepackage[a4paper]{geometry}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{gnuplot-lua-tikz}
+\usepackage{lscape}
 
 \pagestyle{empty}
 
 \begin{document}
-
-\newgeometry{top=1cm,bottom=1cm}
-\begin{center}
-\begin{tabular}{cc}
-\includegraphics[height=.24\textheight]{car.pdf} & \includegraphics[height=.24\textheight]{glass.pdf}\\
-\includegraphics[height=.24\textheight]{iris.pdf} & \includegraphics[height=.24\textheight]{wdbc.pdf}\\
-\includegraphics[height=.24\textheight]{monks-1.pdf} & \includegraphics[height=.24\textheight]{wine.pdf}\\
-\includegraphics[height=.24\textheight]{vehicle.pdf} & \includegraphics[height=.24\textheight]{breast-cancer-wisconsin.pdf}\\
-\end{tabular}
-\end{center}
-\restoregeometry
 
 Test procedure:
 \begin{enumerate}
@@ -30,8 +22,24 @@ Classifiers:
 \item Orange.classification.knn.kNNLearner(name="knn")
 \item Orange.classification.svm.MultiClassSVMLearner(name="svm")
 \item Orange.classification.tree.SimpleTreeLearner(name="tree")
-\item Orange.classification.neural.NeuralNetworkLearner(name="neural\_net")
+\item neural.NeuralNetworkLearner(name="neural\_net", rand=random.Random(1))
 \item Orange.classification.majority.MajorityLearner(name="majority")
 \end{itemize}
+
+\newgeometry{left=1.3cm,right=0.5cm,top=0.5cm,bottom=0.5cm}
+\begin{landscape}
+%\vspace*{-5em}\hspace*{-12em}
+\begin{tabular}{cc}
+\input{car.tex} & \input{glass.tex}\\
+\input{iris.tex} & \input{wdbc.tex}\\
+\end{tabular}
+\newpage
+%\vspace*{-5em}\hspace*{-12em}
+\begin{tabular}{cc}
+\input{monks-1.tex} & \input{wine.tex}\\
+\input{vehicle.tex} & \input{breast-cancer-wisconsin.tex}\\
+\end{tabular}
+\end{landscape}
+\restoregeometry
 
 \end{document}

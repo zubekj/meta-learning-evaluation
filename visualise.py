@@ -21,9 +21,14 @@ results_file.close()
 # Printing learning curve data
 fset = 1.0
 learners = results.values()[0].values()[0].keys()
-print("Data_subset " + " ".join(learners))
+column_names = []
+for l in learners:
+    column_names.append(l)
+    column_names.append(l + "_err")
+print("Data_subset " + " ".join(column_names))
 dsets = results.keys()
 dsets.sort()
 for dset in dsets:
-    dset_dict = results[dset][fset]
-    print(str(dset) + " " + " ".join([str(dset_dict[x]["CA"][0]) for x in learners]))
+    dset_d = results[dset][fset]
+    v = [str(dset_d[x]["CA"][0]) + " " + str(dset_d[x]["CA"][1]) for x in learners]
+    print(str(dset) + " " + " ".join(v))

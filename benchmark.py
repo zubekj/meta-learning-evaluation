@@ -66,13 +66,12 @@ feature_subsets = [1.0]
 
 rand = Orange.misc.Random(0)
 
-learners = [#nbdisc.Learner(name="bayes"),
-            #Orange.classification.bayes.NaiveLearner(name="bayes"),
-            #Orange.classification.knn.kNNLearner(name="knn"),
-            #Orange.classification.svm.MultiClassSVMLearner(name="svm"),
-            #Orange.classification.tree.SimpleTreeLearner(name="tree"),
+learners = [Orange.classification.bayes.NaiveLearner(name="bayes"),
+            Orange.classification.knn.kNNLearner(name="knn"),
+            Orange.classification.svm.MultiClassSVMLearner(name="svm"),
+            Orange.classification.tree.SimpleTreeLearner(name="tree"),
             neural.NeuralNetworkLearner(name="neural_net", rand=random.Random(1)),
-            #Orange.classification.majority.MajorityLearner(name="majority")
+            Orange.classification.majority.MajorityLearner(name="majority")
             ]
 
 results = {}
