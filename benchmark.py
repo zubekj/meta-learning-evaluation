@@ -8,6 +8,18 @@ from Orange.evaluation.testing import learn_and_test_on_test_data
 
 import datasets
 
+MajorityVoteClassifier = Orange.ensemble.bagging.BaggedClassifier
+
+class OrangeRandom(random.Random):
+    
+    def __init__(self, orngRand):
+        self.rand = orngRand
+    
+    def randint(self, a, b):
+        if b <= a:
+            return 0
+        return self.rand(b - a) + a
+
 def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
     Returns new data table with n random features selected from the given table.
@@ -70,7 +82,7 @@ learners = [Orange.classification.bayes.NaiveLearner(name="bayes"),
             Orange.classification.knn.kNNLearner(name="knn"),
             Orange.classification.svm.MultiClassSVMLearner(name="svm"),
             Orange.classification.tree.SimpleTreeLearner(name="tree"),
-            neural.NeuralNetworkLearner(name="neural_net", rand=random.Random(1)),
+            neural.NeuralNetworkLearner(name="neural_net", rand=OrangeRandom(rand)),
             Orange.classification.majority.MajorityLearner(name="majority")
             ]
 
