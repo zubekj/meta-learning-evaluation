@@ -8,8 +8,6 @@ from Orange.evaluation.testing import learn_and_test_on_test_data
 
 import datasets
 
-MajorityVoteClassifier = Orange.ensemble.bagging.BaggedClassifier
-
 class OrangeRandom(random.Random):
     
     def __init__(self, orngRand):
