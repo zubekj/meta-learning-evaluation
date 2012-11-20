@@ -13,6 +13,9 @@ class Learner(object):
 			return learner
 	
 	def __init__(self, accuracy, field_name = "field_name", name='diettrich learner', **kwds):
+		'''
+		@param field_name: name of a meta attribute storing information about true classification. The reason for this argument is that functions for testing in Orange delete information about classification.
+		'''
 		self.__dict__.update(kwds)
 		self.accuracy = accuracy
 		self.field_name = field_name
@@ -32,7 +35,6 @@ class Classifier:
 		Classify a sample.
 		@param example: a sample to be classified. Assumed, that there is a meta-attribute called field_name.
 		@param resulttype: Orange framework style
-		@param field_name: name of a meta attribute storing information about true classification. The reason for this argument is that functions for testing in Orange delete information about classification.
 		'''
 		if random.random() < self.accuracy:
 			value = example[self.field_name]#example.getclass()
@@ -40,12 +42,10 @@ class Classifier:
 			#randomly select other value (uniformly)
 			classification_values = self.domain[self.field_name].values
 			try:
-				#print example[field_name], classification_values
 				index = self.domain[self.field_name].values.index(str(example[self.field_name]))
 			except:
 				print "probably unknown class - return whatever"
 				index = random.randint(0, len(classification_values)-1)
-				#pass
 			wrong_index = random.randint(0, len(classification_values)-2)
 			if wrong_index >= index:
 				wrong_index += 1
