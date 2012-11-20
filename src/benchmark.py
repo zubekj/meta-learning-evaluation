@@ -68,8 +68,9 @@ def split_dataset_random(data, p, random_generator=Orange.misc.Random(0)):
 data_sets = datasets.get_datasets() 
 
 learning_proportion = 0.7
-#learn_subsets = [1.0, 0.3, 0.2, 0.1, 0.075, 0.05]
-learn_subsets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+# learn_subsets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+# Logarithmic scale
+learn_subsets = [1 - math.log(x, 10) for x in xrange(10, 0, -1)]
 sample_size = 10
 #feature_subsets = [1.0, 0.8, 0.6, 0.4, 0.2]
 feature_subsets = [1.0]
@@ -78,7 +79,13 @@ rand = Orange.misc.Random(0)
 
 learners = [Orange.classification.bayes.NaiveLearner(name="bayes"),
             Orange.classification.knn.kNNLearner(name="knn"),
-            Orange.classification.svm.MultiClassSVMLearner(name="svm"),
+            Orange.classification.svm.SVMLearner(kernel_type="RBF", name="svm_rbf"),
+            Orange.classification.svm.SVMLearner(kernel_type="Linear",
+                                                 name="svm_linear"),
+            Orange.classification.svm.SVMLearner(kernel_type="Polynomial",
+                                                 name="svm_polynomial"),
+            Orange.classification.svm.SVMLearner(kernel_type="Sigmoid",
+                                                 name="svm_sigmoid"),
             Orange.classification.tree.SimpleTreeLearner(name="tree"),
             neural.NeuralNetworkLearner(name="neural_net", rand=OrangeRandom(rand)),
             Orange.classification.majority.MajorityLearner(name="majority")
