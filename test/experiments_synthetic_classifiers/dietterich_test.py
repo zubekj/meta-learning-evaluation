@@ -2,7 +2,7 @@ import os
 import unittest
 import sys
 
-sys.path.append('../src')
+sys.path.append('../../src/experiments_synthetic_classifiers')
 
 import dietterich
 import orange, Orange
