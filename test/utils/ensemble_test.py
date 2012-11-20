@@ -3,7 +3,7 @@ import unittest
 import Orange
 from Orange.classification import ConstantClassifier
 
-sys.path.append('../src')
+sys.path.append('../../src/utils/')
 
 from ensemble import *
 
