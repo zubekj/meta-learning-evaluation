@@ -27,6 +27,26 @@ def dict_recur_mean_err(dlist):
         err = t.ppf(1-alpha/2.,n-1) * std / math.sqrt(n-1)
         return (mean, err)
 
+def evaluate_recur(dict, level):
+    if level:
+        rdict = {}
+        for key in dict:
+            rdict[key] = evaluate_recur(dict[key], level-1)
+        return rdict
+    else:
+        rdict = {}
+        for k_sample in dict:
+            test_result = dict[k_sample]
+            CAs = Orange.evaluation.scoring.CA(test_result)
+            eval_result = {}
+            for idx, learner in enumerate(learners):
+                eval_result[learner] = {}
+                eval_result[learner]["CA"] = CAs[idx]
+            rdict[k_sample] = eval_result
+        rdict = dict_recur_mean_err(rdict.values())
+        return rdict
+
+
 if len(sys.argv) > 1:
     data_set = sys.argv[1]
 else:
@@ -35,22 +55,12 @@ else:
 data_path = "{0}_data.pkl".format(data_set)
 data_file = open(data_path, 'rb')
 learners = cPickle.load(data_file)
+levels = cPickle.load(data_file)
 results = cPickle.load(data_file)
 data_file.close()
 
 # Evaluating results
-for k_lset in results:
-    for k_fset in results[k_lset]:
-        for k_sample in results[k_lset][k_fset]:
-            test_result = results[k_lset][k_fset][k_sample]
-            CAs = Orange.evaluation.scoring.CA(test_result)
-            eval_result = {}
-            for idx, learner in enumerate(learners):
-                eval_result[learner] = {}
-                eval_result[learner]["CA"] = CAs[idx]
-            results[k_lset][k_fset][k_sample] = eval_result
-        dict_list = (results[k_lset][k_fset]).values()
-        results[k_lset][k_fset] = dict_recur_mean_err(dict_list)
+results = evaluate_recur(results, levels)
 
 results_path = "{0}_results.pkl".format(data_set)
 results_file = open(results_path, 'wb')
