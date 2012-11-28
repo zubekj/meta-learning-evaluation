@@ -20,4 +20,3 @@ def hamming(i1, i2):
 
 def euclidean(i1, i2):
     return sqrt(sum(imap(lambda x, y: (x-y)*(x-y), i1, i2)))
-

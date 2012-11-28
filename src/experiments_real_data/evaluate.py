@@ -56,12 +56,3 @@ results_path = "{0}_results.pkl".format(data_set)
 results_file = open(results_path, 'wb')
 cPickle.dump(results, results_file)
 results_file.close()
-
-# Printing results
-#for k_lset in results:
-#    print
-#    print("Data subset %f:" % k_lset)
-#    for k_fset in results[k_lset]:
-#        print("Feature subset %f:" % k_fset)
-#        for k_learner in results[k_lset][k_fset]:
-#            print "%s %5.3f+-%5.3f" % ((k_learner,) + results[k_lset][k_fset][k_learner]["CA"])
