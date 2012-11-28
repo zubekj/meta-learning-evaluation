@@ -4,8 +4,15 @@ import random
 import cPickle
 import Orange
 import neural
+import copy
+from itertools import imap
+from operator import itemgetter
 from Orange.evaluation.testing import learn_and_test_on_test_data
 from Orange.classification.svm import kernels
+
+sys.path.append('~/projects/meta-learning-evaluation/src/utils/')
+
+from similarity import instance_dataset_distance, hamming
 
 import datasets
 
@@ -18,6 +25,29 @@ class OrangeRandom(random.Random):
         if b <= a:
             return 0
         return self.rand(b - a) + a
+
+rand = Orange.misc.Random(0)
+
+# Global options
+LEARNING_PROPORTION = 0.7
+LEARN_SUBSETS = [1 - math.log(x, 11) for x in xrange(10, 0, -1)] # Log scale
+SAMPLE_SIZE = 10
+FEATURE_SUBSETS = [1.0]
+LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
+            Orange.classification.knn.kNNLearner(name="knn"),
+            Orange.classification.svm.SVMLearner(kernel_type=kernels.RBF,
+                                                 name="svm_rbf"),
+            Orange.classification.svm.SVMLearner(kernel_type=kernels.Linear,
+                                                 name="svm_linear"),
+            Orange.classification.svm.SVMLearner(kernel_type=kernels.Polynomial,
+                                                 name="svm_polynomial"),
+            Orange.classification.svm.SVMLearner(kernel_type=kernels.Sigmoid,
+                                                 name="svm_sigmoid"),
+            Orange.classification.tree.SimpleTreeLearner(name="tree"),
+            neural.NeuralNetworkLearner(name="neural_net",
+                                        rand=OrangeRandom(rand)),
+            Orange.classification.majority.MajorityLearner(name="majority")
+            ]
 
 def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
@@ -66,15 +96,31 @@ def split_dataset_random(data, p, random_generator=Orange.misc.Random(0)):
     t2 = data.get_items_ref(indices_2)
     return (t2, t1)
 
-def benchmark_features_and_data_subsets(data, learners, feature_subsets,
-                                        learn_subsets, sample_size,
-                                        learning_proportion, rand):
+def build_set_list_desc_similarity(data, set_size, rand=Orange.misc.Random(0)):
+    """
+    Builds a list of subsets of data in which each consecutive subset is less
+    similar to the first one (uses utils.similarity.datasets_distance). Each
+    subset is of size S = set_size * len(data).
+    """
+    def distance_to_s0(x):
+        return instance_dataset_distance(x, s0, hamming)
+    s0, _ = split_dataset_random(data, set_size, rand)
+    asc_list = sorted(data, key=distance_to_s0)
+    sets = [s0]
+    for i in xrange(len(s0), len(asc_list)):
+        s = copy.copy(sets[-1])
+        idx = min(enumerate(imap(distance_to_s0, s)), key=itemgetter(1))[0] 
+        s[idx] = asc_list[i]
+        sets.append(s)
+    return sets
+
+def benchmark_features_and_data_subsets(data, rand):
     # Levels: 1. Learn subset, 2. Feature subset (3. Samples, 4. Learner)
     levels = 2
-    learn_data, test_data = split_dataset_random(data, learning_proportion, rand)
-    for sp in learn_subsets:
+    learn_data, test_data = split_dataset_random(data, LEARNING_PROPORTION, rand)
+    for sp in LEARN_SUBSETS:
         results[sp] = {}
-        for fs in feature_subsets:
+        for fs in FEATURE_SUBSETS:
             results[sp][fs] = {}
             for i in range(sample_size):
                 sp_ldata, _n = split_dataset_random(data, sp)
@@ -82,53 +128,28 @@ def benchmark_features_and_data_subsets(data, learners, feature_subsets,
                 results[sp][fs][i] = learn_and_test_on_test_data(learners, fs_ldata, fs_tdata)
     return (levels, results)
 
-data_sets = datasets.get_datasets() 
 
-learning_proportion = 0.7
-# learn_subsets = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-# Logarithmic scale
-learn_subsets = [1 - math.log(x, 11) for x in xrange(10, 0, -1)]
-sample_size = 10
-#feature_subsets = [1.0, 0.8, 0.6, 0.4, 0.2]
-feature_subsets = [1.0]
 
-rand = Orange.misc.Random(0)
+if __name__ == '__main__':
 
-learners = [Orange.classification.bayes.NaiveLearner(name="bayes"),
-            Orange.classification.knn.kNNLearner(name="knn"),
-            Orange.classification.svm.SVMLearner(kernel_type=kernels.RBF,
-                                                 name="svm_rbf"),
-            Orange.classification.svm.SVMLearner(kernel_type=kernels.Linear,
-                                                 name="svm_linear"),
-            Orange.classification.svm.SVMLearner(kernel_type=kernels.Polynomial,
-                                                 name="svm_polynomial"),
-            Orange.classification.svm.SVMLearner(kernel_type=kernels.Sigmoid,
-                                                 name="svm_sigmoid"),
-            Orange.classification.tree.SimpleTreeLearner(name="tree"),
-            neural.NeuralNetworkLearner(name="neural_net",
-                                        rand=OrangeRandom(rand)),
-            Orange.classification.majority.MajorityLearner(name="majority")
-            ]
 
-results = {}
+    results = {}
 
-if len(sys.argv) > 1:
-    data_file = sys.argv[1]
-else:
-    data_file = "iris"
+    if len(sys.argv) > 1:
+        data_file = sys.argv[1]
+    else:
+        data_file = "iris"
 
-data = Orange.data.Table(data_file)
+    data = Orange.data.Table(data_file)
 
-levels, results = benchmark_features_and_data_subsets(data, learners,
-                                    feature_subsets, learn_subsets,
-                                    sample_size, learning_proportion, rand)
+    levels, results = benchmark_features_and_data_subsets(data, rand)
 
-learners_names = map(lambda x: x.name, learners)
+    learners_names = map(lambda x: x.name, learners)
 
-data_path = "{0}_data.pkl".format(data_file)
+    data_path = "{0}_data.pkl".format(data_file)
 
-data_file = open(data_path, "wb")
-cPickle.dump(learners_names, data_file)
-cPickle.dump(levels, data_file)
-cPickle.dump(results, data_file)
-data_file.close()
+    data_file = open(data_path, "wb")
+    cPickle.dump(learners_names, data_file)
+    cPickle.dump(levels, data_file)
+    cPickle.dump(results, data_file)
+    data_file.close()
