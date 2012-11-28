@@ -30,5 +30,13 @@ class TestSimilarity(unittest.TestCase):
         self.assertEqual(datasets_distance(data1, data1, hamming), 0)
         self.assertEqual(datasets_distance(data1, data2, hamming), 2)
 
+    def test_instance_dataset_distance(self):
+        data1 = Orange.data.Table("test.tab")
+        i1 = data1[0]
+        data2 = Orange.data.Table("test1.tab")
+        i2 = data2[3]
+        self.assertEqual(instance_dataset_distance(i1, data1, hamming), 0)
+        self.assertEqual(instance_dataset_distance(i2, data1, hamming), 1)
+
 if __name__ == '__main__':
     unittest.main()
