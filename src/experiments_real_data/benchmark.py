@@ -95,14 +95,15 @@ def split_dataset_random(data, p, random_generator=Orange.misc.Random(0)):
     t2 = data.get_items_ref(indices_2)
     return (t2, t1)
 
-def build_set_list_desc_similarity(data, set_size, rand=Orange.misc.Random(0)):
+def build_set_list_desc_similarity(data, set_size, metric=hamming,
+                                   rand=Orange.misc.Random(0)):
     """
     Builds a list of subsets of data in which each consecutive subset is less
     similar to the first one (uses utils.similarity.datasets_distance). Each
     subset is of size S = set_size * len(data).
     """
     def distance_to_s0(x):
-        return instance_dataset_distance(x, s0, hamming)
+        return instance_dataset_distance(x, s0, metric)
     s0, _ = split_dataset_random(data, set_size, rand)
     asc_list = sorted(data, key=distance_to_s0)
     sets = [s0]

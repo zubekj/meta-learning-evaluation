@@ -7,7 +7,7 @@ sys.path.append('../../src/experiments_real_data/')
 sys.path.append('../../src/utils/')
 
 from benchmark import *
-from similarity import datasets_distance, hamming
+from similarity import datasets_distance, hamming, euclidean
 
 class TestBenchmark(unittest.TestCase):
 
@@ -25,11 +25,15 @@ class TestBenchmark(unittest.TestCase):
 
     def test_build_set_list_desc_similarity_long(self):
         data = Orange.data.Table("iris")
-        l = build_set_list_desc_similarity(data, 0.5)
-        dists = [datasets_distance(l[0], x, hamming) for x in l]
-        for i in xrange(1,len(dists)):
-            self.assertGreaterEqual(dists[i], dists[i-1])
-        self.assertGreater(dist[-1], dist[0])
+        def test_metric(metric_fun):
+            l = build_set_list_desc_similarity(data, 0.5, metric_fun)
+            dists = [datasets_distance(l[0], x, metric_fun) for x in l]
+            for i in xrange(1,len(dists)):
+                self.assertGreaterEqual(dists[i], dists[i-1])
+            self.assertGreater(dists[-1], dists[0])
+        test_metric(hamming)
+        test_metric(euclidean)
+
 
 if __name__ == '__main__':
     unittest.main()
