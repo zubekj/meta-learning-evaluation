@@ -17,12 +17,28 @@ class TestSimilarity(unittest.TestCase):
         self.assertEqual(hamming(b,b), 0)
         self.assertEqual(hamming(a,b), 1)
 
+    def test_hamming_iris(self):
+        data = Orange.data.Table('iris')
+        a = data[0]
+        b = data[1]
+        self.assertEqual(hamming(a,a), 0)
+        self.assertEqual(hamming(b,b), 0)
+        self.assertEqual(hamming(a,b), 2)
+
     def test_euclidean(self):
         a = [1,0,0]
         b = [1,4,3]
         self.assertEqual(euclidean(a,a), 0)
         self.assertEqual(euclidean(b,b), 0)
         self.assertEqual(euclidean(a,b), 5)
+
+    def test_euclidean_iris(self):
+        data = Orange.data.Table('iris')
+        a = data[0]
+        b = data[1]
+        self.assertEqual(euclidean(a,a), 0)
+        self.assertEqual(euclidean(b,b), 0)
+        self.assertAlmostEqual(euclidean(a,b), 0.5385164)
 
     def test_datasets_distance(self):
         data1 = Orange.data.Table("test.tab")

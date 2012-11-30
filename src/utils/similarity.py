@@ -27,4 +27,10 @@ def hamming(i1, i2):
     return sum(imap(operator.ne, i1, i2))
 
 def euclidean(i1, i2):
-    return sqrt(sum(imap(lambda x, y: (x-y)*(x-y), i1, i2)))
+    def diff(x, y):
+        try:
+            return x - y
+        except TypeError:
+            return int(x != y)
+
+    return sqrt(sum(imap(lambda x, y: diff(x,y)**2, i1, i2)))
