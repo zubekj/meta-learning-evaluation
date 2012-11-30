@@ -4,7 +4,6 @@ import random
 import cPickle
 import Orange
 import neural
-import copy
 from itertools import imap
 from operator import itemgetter
 from Orange.evaluation.testing import learn_and_test_on_test_data
@@ -108,7 +107,7 @@ def build_set_list_desc_similarity(data, set_size, rand=Orange.misc.Random(0)):
     asc_list = sorted(data, key=distance_to_s0)
     sets = [s0]
     for i in xrange(len(s0), len(asc_list)):
-        s = copy.copy(sets[-1])
+        s = sets[-1].get_items(range(len(sets[-1])))
         idx = min(enumerate(imap(distance_to_s0, s)), key=itemgetter(1))[0] 
         s[idx] = asc_list[i]
         sets.append(s)
