@@ -122,10 +122,10 @@ def benchmark_features_and_data_subsets(data, rand):
         results[sp] = {}
         for fs in FEATURE_SUBSETS:
             results[sp][fs] = {}
-            for i in range(sample_size):
+            for i in range(SAMPLE_SIZE):
                 sp_ldata, _n = split_dataset_random(data, sp)
                 fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, rand)
-                results[sp][fs][i] = learn_and_test_on_test_data(learners, fs_ldata, fs_tdata)
+                results[sp][fs][i] = learn_and_test_on_test_data(LEARNERS, fs_ldata, fs_tdata)
     return (levels, results)
 
 
