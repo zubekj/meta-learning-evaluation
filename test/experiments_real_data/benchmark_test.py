@@ -34,6 +34,5 @@ class TestBenchmark(unittest.TestCase):
         test_metric(hamming)
         test_metric(euclidean)
 
-
 if __name__ == '__main__':
     unittest.main()

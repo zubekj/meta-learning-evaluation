@@ -15,13 +15,13 @@ def datasets_distance(set1, set2, metric_function):
                                                     metric_function), s1))
     return d(set1, set2) + d(set2, set1)
 
-def instance_dataset_distance(instance, set, metric_function):
+def instance_dataset_distance(instance, dataset, metric_function):
     """
     Calculates the distance between instance and dataset as the
     distance from the given instance to the closest instance from the
     dataset.
     """
-    return min(imap(lambda i2: metric_function(instance, i2), set))
+    return min(imap(lambda i2: metric_function(instance, i2), dataset))
 
 def hamming(i1, i2):
     return sum(imap(operator.ne, i1, i2))

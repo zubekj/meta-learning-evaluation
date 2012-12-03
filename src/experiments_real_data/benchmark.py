@@ -1,6 +1,7 @@
 import sys
 import math
 import random
+import heapq
 import cPickle
 import Orange
 import neural
@@ -11,7 +12,7 @@ from Orange.classification.svm import kernels
 
 sys.path.append('../src/')
 
-from utils.similarity import instance_dataset_distance, hamming
+from utils.similarity import *
 
 import datasets
 
@@ -105,14 +106,30 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
     def distance_to_s0(x):
         return instance_dataset_distance(x, s0, metric)
     s0, _ = split_dataset_random(data, set_size, rand)
-    asc_list = sorted(data, key=distance_to_s0)
+    asc_list = sorted([(distance_to_s0(i), i) for i in data])
     sets = [s0]
+    s_dists = [(0, i) for i in xrange(len(s0))]
     for i in xrange(len(s0), len(asc_list)):
         s = sets[-1].get_items(range(len(sets[-1])))
-        idx = min(enumerate(imap(distance_to_s0, s)), key=itemgetter(1))[0] 
-        s[idx] = asc_list[i]
+        idx = heapq.heappop(s_dists)[1]
+        s[idx] = asc_list[i][1]
+        heapq.heappush(s_dists, (asc_list[i][0], idx))
         sets.append(s)
     return sets
+
+def benchmark_generalization(data, rand):
+    # Levels: 1.  (3. Samples, 4. Learner)
+    levels = 1
+    learn_data, test_data = split_dataset_random(data, LEARNING_PROPORTION, rand)
+    for sp in LEARN_SUBSETS:
+        results[sp] = {}
+        for fs in FEATURE_SUBSETS:
+            results[sp][fs] = {}
+            for i in range(SAMPLE_SIZE):
+                sp_ldata, _n = split_dataset_random(data, sp)
+                fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, rand)
+                results[sp][fs][i] = learn_and_test_on_test_data(LEARNERS, fs_ldata, fs_tdata)
+    return (levels, results)
 
 def benchmark_features_and_data_subsets(data, rand):
     # Levels: 1. Learn subset, 2. Feature subset (3. Samples, 4. Learner)
@@ -131,7 +148,6 @@ def benchmark_features_and_data_subsets(data, rand):
 
 
 if __name__ == '__main__':
-
 
     results = {}
 
