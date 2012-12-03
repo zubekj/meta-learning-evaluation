@@ -4,9 +4,9 @@ import copy
 import Orange
 from Orange.classification import ConstantClassifier
 
-sys.path.append('../../src/utils/')
+sys.path.append('../../src/')
 
-from similarity import *
+from utils.similarity import *
 
 class TestSimilarity(unittest.TestCase):
 

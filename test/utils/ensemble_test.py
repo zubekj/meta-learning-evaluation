@@ -3,9 +3,9 @@ import unittest
 import Orange
 from Orange.classification import ConstantClassifier
 
-sys.path.append('../../src/utils/')
+sys.path.append('../../src/')
 
-from ensemble import *
+from utils.ensemble import *
 
 class TestEnsemble(unittest.TestCase):
 

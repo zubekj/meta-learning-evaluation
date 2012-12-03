@@ -4,10 +4,10 @@ import copy
 import Orange
 
 sys.path.append('../../src/experiments_real_data/')
-sys.path.append('../../src/utils/')
+sys.path.append('../../src/')
 
 from benchmark import *
-from similarity import datasets_distance, hamming, euclidean
+from utils.similarity import datasets_distance, hamming, euclidean
 
 class TestBenchmark(unittest.TestCase):
 

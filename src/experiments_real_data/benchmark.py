@@ -9,9 +9,9 @@ from operator import itemgetter
 from Orange.evaluation.testing import learn_and_test_on_test_data
 from Orange.classification.svm import kernels
 
-sys.path.append('~/projects/meta-learning-evaluation/src/utils/')
+sys.path.append('../src/')
 
-from similarity import instance_dataset_distance, hamming
+from utils.similarity import instance_dataset_distance, hamming
 
 import datasets
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     levels, results = benchmark_features_and_data_subsets(data, rand)
 
-    learners_names = map(lambda x: x.name, learners)
+    learners_names = map(lambda x: x.name, LEARNERS)
 
     data_path = "{0}_data.pkl".format(data_file)
 
