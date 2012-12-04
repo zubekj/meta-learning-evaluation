@@ -6,6 +6,7 @@ import cPickle
 def print_learning_curve(learners, results):
     # Printing learning curve data
     column_names = []
+    learners.sort()
     for l in learners:
         column_names.append(l)
         column_names.append(l + "_err")
