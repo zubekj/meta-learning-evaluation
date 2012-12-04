@@ -124,17 +124,17 @@ def benchmark_generalization(data, rand):
     # Levels: 1. Test data distance (2. Samples, 3. Learner)
     levels = 1
     results = {}
-    sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
-                                          METRIC, rand)
-    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
-    if step == 0:
-        fsets = sets
-    else:
-        fsets = [sets[i] for i in xrange(0,len(sets),step)]
-        if fsets[-1] != sets[-1]:
-            fsets.append(sets[-1])
-    dists = map(lambda s: datasets_distance(fsets[0], s, euclidean), fsets)
     for i in xrange(SAMPLE_SIZE):
+        sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
+                                          METRIC, rand)
+        step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
+        if step == 0:
+            fsets = sets
+        else:
+            fsets = [sets[i] for i in xrange(0,len(sets),step)]
+            if fsets[-1] != sets[-1]:
+                fsets.append(sets[-1])
+        dists = map(lambda s: datasets_distance(fsets[0], s, euclidean), fsets)
         classifiers = map(lambda l: l(fsets[0]), LEARNERS)
         for j in xrange(len(fsets)):
             if not dists[j] in results:
