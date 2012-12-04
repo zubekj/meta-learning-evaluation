@@ -32,6 +32,7 @@ rand = Orange.misc.Random(0)
 METRIC = euclidean
 LEARNING_PROPORTION = 0.7
 GENERALIZATION_PROPORTION = 0.5
+GENERALIZED_SETS = 20
 LEARN_SUBSETS = [1 - math.log(x, 11) for x in xrange(10, 0, -1)] # Log scale
 SAMPLE_SIZE = 10
 FEATURE_SUBSETS = [1.0]
@@ -125,13 +126,20 @@ def benchmark_generalization(data, rand):
     results = {}
     sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
                                           METRIC, rand)
-    dists = map(lambda s: datasets_distance(sets[0], s, euclidean), sets)
+    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
+    if step == 0:
+        fsets = sets
+    else:
+        fsets = [sets[i] for i in xrange(0,len(sets),step)]
+        if fsets[-1] != sets[-1]:
+            fsets.append(sets[-1])
+    dists = map(lambda s: datasets_distance(fsets[0], s, euclidean), fsets)
     for i in xrange(SAMPLE_SIZE):
-        classifiers = map(lambda l: l(sets[0]), LEARNERS)
-        for j in xrange(len(sets)):
+        classifiers = map(lambda l: l(fsets[0]), LEARNERS)
+        for j in xrange(len(fsets)):
             if not dists[j] in results:
                 results[dists[j]] = {}
-            results[dists[j]][i] = test_on_data(classifiers, sets[j])
+            results[dists[j]][i] = test_on_data(classifiers, fsets[j])
     return (levels, results)
 
 def benchmark_data_subsets(data, rand):
