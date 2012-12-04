@@ -7,10 +7,10 @@ import Orange
 import neural
 from itertools import imap
 from operator import itemgetter
-from Orange.evaluation.testing import learn_and_test_on_test_data
+from Orange.evaluation.testing import learn_and_test_on_test_data, test_on_data
 from Orange.classification.svm import kernels
 
-sys.path.append('../src/')
+sys.path.append('../')
 
 from utils.similarity import *
 
@@ -29,7 +29,9 @@ class OrangeRandom(random.Random):
 rand = Orange.misc.Random(0)
 
 # Global options
+METRIC = euclidean
 LEARNING_PROPORTION = 0.7
+GENERALIZATION_PROPORTION = 0.5
 LEARN_SUBSETS = [1 - math.log(x, 11) for x in xrange(10, 0, -1)] # Log scale
 SAMPLE_SIZE = 10
 FEATURE_SUBSETS = [1.0]
@@ -118,38 +120,34 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
     return sets
 
 def benchmark_generalization(data, rand):
-    # Levels: 1.  (3. Samples, 4. Learner)
+    # Levels: 1. Test data distance (2. Samples, 3. Learner)
     levels = 1
-    learn_data, test_data = split_dataset_random(data, LEARNING_PROPORTION, rand)
-    for sp in LEARN_SUBSETS:
-        results[sp] = {}
-        for fs in FEATURE_SUBSETS:
-            results[sp][fs] = {}
-            for i in range(SAMPLE_SIZE):
-                sp_ldata, _n = split_dataset_random(data, sp)
-                fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, rand)
-                results[sp][fs][i] = learn_and_test_on_test_data(LEARNERS, fs_ldata, fs_tdata)
+    results = {}
+    sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
+                                          METRIC, rand)
+    dists = map(lambda s: datasets_distance(sets[0], s, euclidean), sets)
+    for i in xrange(SAMPLE_SIZE):
+        classifiers = map(lambda l: l(sets[0]), LEARNERS)
+        for j in xrange(len(sets)):
+            if not dists[j] in results:
+                results[dists[j]] = {}
+            results[dists[j]][i] = test_on_data(classifiers, sets[j])
     return (levels, results)
 
-def benchmark_features_and_data_subsets(data, rand):
+def benchmark_data_subsets(data, rand):
     # Levels: 1. Learn subset, 2. Feature subset (3. Samples, 4. Learner)
-    levels = 2
+    levels = 1
+    results = {}
     learn_data, test_data = split_dataset_random(data, LEARNING_PROPORTION, rand)
     for sp in LEARN_SUBSETS:
         results[sp] = {}
-        for fs in FEATURE_SUBSETS:
-            results[sp][fs] = {}
-            for i in range(SAMPLE_SIZE):
-                sp_ldata, _n = split_dataset_random(data, sp)
-                fs_ldata, fs_tdata = select_features_proportion(sp_ldata, test_data, fs, rand)
-                results[sp][fs][i] = learn_and_test_on_test_data(LEARNERS, fs_ldata, fs_tdata)
+        for i in xrange(SAMPLE_SIZE):
+            sp_ldata, _n = split_dataset_random(data, sp)
+            results[sp][i] = learn_and_test_on_test_data(LEARNERS,
+                                                             sp_ldata, test_data)
     return (levels, results)
-
-
 
 if __name__ == '__main__':
-
-    results = {}
 
     if len(sys.argv) > 1:
         data_file = sys.argv[1]
@@ -158,7 +156,8 @@ if __name__ == '__main__':
 
     data = Orange.data.Table(data_file)
 
-    levels, results = benchmark_features_and_data_subsets(data, rand)
+    #levels, results = benchmark_data_subsets(data, rand)
+    levels, results = benchmark_generalization(data, rand)
 
     learners_names = map(lambda x: x.name, LEARNERS)
 

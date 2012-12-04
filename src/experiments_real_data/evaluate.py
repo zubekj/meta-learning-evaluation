@@ -27,16 +27,16 @@ def dict_recur_mean_err(dlist):
         err = t.ppf(1-alpha/2.,n-1) * std / math.sqrt(n-1)
         return (mean, err)
 
-def evaluate_recur(dict, level):
+def evaluate_recur(edict, level):
     if level:
         rdict = {}
-        for key in dict:
-            rdict[key] = evaluate_recur(dict[key], level-1)
+        for key in edict:
+            rdict[key] = evaluate_recur(edict[key], level-1)
         return rdict
     else:
         rdict = {}
-        for k_sample in dict:
-            test_result = dict[k_sample]
+        for k_sample in edict:
+            test_result = edict[k_sample]
             CAs = Orange.evaluation.scoring.CA(test_result)
             eval_result = {}
             for idx, learner in enumerate(learners):
@@ -64,5 +64,6 @@ results = evaluate_recur(results, levels)
 
 results_path = "{0}_results.pkl".format(data_set)
 results_file = open(results_path, 'wb')
+cPickle.dump(learners, results_file)
 cPickle.dump(results, results_file)
 results_file.close()
