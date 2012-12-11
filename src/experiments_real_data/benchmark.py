@@ -60,7 +60,7 @@ def select_random_features(data, test_data, n, random_generator=Orange.misc.Rand
     if n >= features_number:
         return (data, test_data)
     indices = range(features_number)
-    for i in range(features_number - n):
+    for i in xrange(features_number - n):
         del indices[random_generator(len(indices))]
     sel = indices + [features_number]
     return (data.select(sel), test_data.select(sel))
@@ -76,28 +76,12 @@ def select_features_proportion(data, test_data, p,
          
 def split_dataset(data, p):
     """
-    Splits the data table according to given proportion.
+    Splits the data table according to the given proportion.
     """
     l = len(data)
     t1 = data.get_items_ref(range(int(math.floor(p*l))))
     t2 = data.get_items_ref(range(int(math.ceil(p*l)), l))
     return (t1, t2)
-
-def split_dataset_random(data, p, random_generator=Orange.misc.Random(0)):
-    """
-    Randomly selects instances from the data table and divides them into
-    two tables according to given proportion.
-    """
-    l = len(data)
-    indices_1 = range(l)
-    indices_2 = []
-    for i in range(int(math.floor(p*l))):
-        idx = random_generator(len(indices_1))
-        indices_2.append(indices_1[idx])
-        del indices_1[idx]
-    t1 = data.get_items_ref(indices_1)
-    t2 = data.get_items_ref(indices_2)
-    return (t2, t1)
 
 def build_set_list_desc_similarity(data, set_size, metric=hamming,
                                    rand=Orange.misc.Random(0)):
@@ -108,7 +92,7 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
     """
     def distance_to_s0(x):
         return instance_dataset_distance(x, s0, metric)
-    s0, _ = split_dataset_random(data, set_size, rand)
+    s0, _ = split_dataset(data, set_size)
     asc_list = sorted([(distance_to_s0(i), i) for i in data])
     sets = [s0]
     s_dists = [(0, i) for i in xrange(len(s0))]
@@ -124,6 +108,7 @@ def benchmark_generalization(data, rand):
     # Levels: 1. Test data distance (2. Samples, 3. Learner)
     levels = 1
     results = {}
+    data.shuffle()
     sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
                                       METRIC, rand)
     step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
@@ -143,15 +128,38 @@ def benchmark_generalization(data, rand):
 
 def benchmark_data_subsets(data, rand):
     # Levels: 1. Learn subset, 2. Feature subset (3. Samples, 4. Learner)
+    def indices_gen(p, rand, data):
+        if p == len(data):
+            return [0] * p
+        if p == 1:
+            ind = [1] * len(data)
+            ind[rand(len(data))] = 0
+            return ind
+        indices2 = Orange.data.sample.SubsetIndices2(p0=p)
+        indices2.random_generator = rand
+        return indices2(data)
+
     levels = 1
     results = {}
-    learn_data, test_data = split_dataset_random(data, LEARNING_PROPORTION, rand)
-    for sp in LEARN_SUBSETS:
-        results[sp] = {}
+    ind = indices_gen(LEARNING_PROPORTION, rand, data)
+    learn_data = data.select(ind, 0)
+    test_data = data.select(ind, 1)
+    dlen = len(learn_data)
+    # Increasing subsets by single instances
+    for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
+        results[sn] = {}
         for i in xrange(SAMPLE_SIZE):
-            sp_ldata, _n = split_dataset_random(data, sp)
-            results[sp][i] = learn_and_test_on_test_data(LEARNERS,
-                                                             sp_ldata, test_data)
+            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
+            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
+                                                             sn_ldata, test_data)
+    # Increasing subsets by proportions
+    for sp in LEARN_SUBSETS:
+        sn = int(sp * dlen)
+        results[sn] = {}
+        for i in xrange(SAMPLE_SIZE):
+            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
+            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
+                                                             sn_ldata, test_data)
     return (levels, results)
 
 if __name__ == '__main__':
@@ -163,8 +171,8 @@ if __name__ == '__main__':
 
     data = Orange.data.Table(data_file)
 
-    #levels, results = benchmark_data_subsets(data, rand)
-    levels, results = benchmark_generalization(data, rand)
+    levels, results = benchmark_data_subsets(data, rand)
+    #levels, results = benchmark_generalization(data, rand)
 
     learners_names = map(lambda x: x.name, LEARNERS)
 
