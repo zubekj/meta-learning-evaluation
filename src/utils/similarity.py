@@ -35,7 +35,6 @@ def euclidean(i1, i2):
 
     return sqrt(sum(imap(lambda x, y: diff(x,y)**2, i1, i2)))
 
-
 def data_distribution(data):
     """
     Calculates a discrete distribution of values in the dataset. All the
@@ -47,20 +46,57 @@ def data_distribution(data):
     distr = {}
     for subset_size in xrange(1, n_attrs+1):
         for subset in combinations(indices, subset_size):
+            sdistr = {}
             for d in data:
-                val = tuple([subset] + [d[i].value for i in subset])
-                if val not in distr:
-                    distr[val] = 0
-                distr[val] += 1
-    for val in distr:
-        distr[val] = float(distr[val]) / n_vals
+                val = tuple([d[i].value for i in subset])
+                if val not in sdistr:
+                    sdistr[val] = 0
+                sdistr[val] += 1
+            distr[subset] = sdistr
+    for sdistr in distr.values():
+        for val in sdistr:
+            sdistr[val] = float(sdistr[val]) / n_vals
     return distr
 
-def kl_divergence(distr1=None, distr2=None):
+def hellinger_distances_sum(cdistr1, cdistr2):
+    """
+    Sum of Hellinger distances for two sets of analogous distributions.
+    """
+    s = 0
+    for k in cdistr1:
+        if k in cdistr2:
+            s += hellinger_distance(cdistr1[k], cdistr2[k])
+        else:
+            s += 1
+    for k in cdistr2:
+        if not k in cdistr1:
+            s += 1
+    return s
+
+def hellinger_distance(distr1, distr2):
+    """
+    Calculates Hellinger distance between two discrete probability
+    distributions.
+    """
+    s = 0
+    for v in distr1:
+        if v in distr2:
+            s += (distr1[v] - distr2[v]) * (distr1[v] - distr2[v])
+        else:
+            s += distr1[v] * distr1[v]
+    for v in distr2:
+        if v not in distr1:
+            s += distr2[v] * distr2[v]
+    return sqrt(s)/sqrt(2)
+
+def kl_divergence(distr1, distr2):
     """
     Calculates Kullback-Leibner divergence between two discrete probability
-    distributions. Divergence is well defined if every value from dist1 is
-    included in distr2.
+    distributions. Divergence is well defined if every value from
+    distr1 is included in distr2.
+    
+    distr1 can be treated as the "real" distribution and distr2 is
+    is estimated distribution com
     """
     s = 0
     for v in distr1:

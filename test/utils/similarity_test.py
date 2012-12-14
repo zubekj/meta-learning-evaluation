@@ -57,15 +57,25 @@ class TestSimilarity(unittest.TestCase):
     def test_data_distribution(self):
         data1 = Orange.data.Table("test.tab")
         dist = data_distribution(data1)
-        self.assertEqual(dist[((0,), 1)], 0.5)
-        self.assertEqual(dist[((2,), '1')], 0.25)
+        self.assertEqual(dist[(0,)][(1,)], 0.5)
+        self.assertEqual(dist[(2,)][('1',)], 0.25)
 
     def test_kl_divergence(self):
         data1 = Orange.data.Table("test.tab")
         data2 = Orange.data.Table("test1.tab")
+        cdistr1 = data_distribution(data1)
+        cdistr2 = data_distribution(data2)
+        self.assertAlmostEqual(kl_divergence(cdistr1[(0,)], cdistr2[(0,)]), 0.20751874963)
+ 
+    def test_hellinger_distance(self):
+        data1 = Orange.data.Table("test.tab")
+        data2 = Orange.data.Table("test1.tab")
         distr1 = data_distribution(data1)
         distr2 = data_distribution(data2)
-        self.assertAlmostEqual(kl_divergence(distr1, distr2), 0.66503749)
-        
+        self.assertEqual(hellinger_distances_sum(distr1, distr1), 0)
+        self.assertEqual(hellinger_distances_sum(distr1, {}), 7)
+        self.assertEqual(hellinger_distances_sum({}, distr1), 7)
+        self.assertAlmostEqual(hellinger_distances_sum(distr1, distr2), 1.5)
+       
 if __name__ == '__main__':
     unittest.main()
