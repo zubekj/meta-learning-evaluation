@@ -1,6 +1,6 @@
 import operator
-from itertools import imap
-from math import sqrt
+from itertools import imap, combinations
+from math import sqrt, log
 
 def datasets_distance(set1, set2, metric_function):
     """
@@ -34,3 +34,36 @@ def euclidean(i1, i2):
             return int(x != y)
 
     return sqrt(sum(imap(lambda x, y: diff(x,y)**2, i1, i2)))
+
+
+def data_distribution(data):
+    """
+    Calculates a discrete distribution of values in the dataset. All the
+    possible combinations of attributes are taken into account.
+    """
+    n_attrs = len(data.domain)
+    n_vals = len(data)
+    indices = range(n_attrs)
+    distr = {}
+    for subset_size in xrange(1, n_attrs+1):
+        for subset in combinations(indices, subset_size):
+            for d in data:
+                val = tuple([subset] + [d[i].value for i in subset])
+                if val not in distr:
+                    distr[val] = 0
+                distr[val] += 1
+    for val in distr:
+        distr[val] = float(distr[val]) / n_vals
+    return distr
+
+def kl_divergence(distr1=None, distr2=None):
+    """
+    Calculates Kullback-Leibner divergence between two discrete probability
+    distributions. Divergence is well defined if every value from dist1 is
+    included in distr2.
+    """
+    s = 0
+    for v in distr1:
+        if v in distr2:
+            s += log(distr1[v] / distr2[v], 2) * distr1[v]
+    return s
