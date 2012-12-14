@@ -104,6 +104,31 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
         sets.append(s)
     return sets
 
+def build_subsets_dec_dist(data, rand=Orange.misc.Random(0)):
+    """
+    Builds a list of subsets of the whole dataset iteratively using greedy approach
+    based on Hellinger distance minimalization.
+    """
+    data_distr = data_distribution(data)
+    unassigned_data = data.get_items(range(len(data)))
+    sets = [Orange.data.Table(data.domain)]
+
+    while len(unassigned_data):
+        cset = sets[-1].get_items(range(len(sets[-1])))
+        dists = []
+        for d in unassigned_data:
+            cset.append(d)
+            cdistr = data_distribution(cset)
+            dists.append(hellinger_distances_sum(cdistr, data_distr))
+            del cset[-1]
+        idx = min(xrange(len(dists)),key=dists.__getitem__)
+        cset.append(unassigned_data[idx])
+        del unassigned_data[idx]
+        sets.append(cset)
+
+    return sets
+         
+
 def benchmark_generalization(data, rand):
     # Levels: 1. Test data distance (2. Samples, 3. Learner)
     levels = 1

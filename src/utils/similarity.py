@@ -67,10 +67,10 @@ def hellinger_distances_sum(cdistr1, cdistr2):
         if k in cdistr2:
             s += hellinger_distance(cdistr1[k], cdistr2[k])
         else:
-            s += 1
+            s += hellinger_distance(cdistr1[k], {})
     for k in cdistr2:
         if not k in cdistr1:
-            s += 1
+            s += hellinger_distance({}, cdistr2[k])
     return s
 
 def hellinger_distance(distr1, distr2):
