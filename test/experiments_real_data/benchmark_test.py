@@ -7,7 +7,7 @@ sys.path.append('../../src/experiments_real_data/')
 sys.path.append('../../src/')
 
 from benchmark import *
-from utils.similarity import datasets_distance, hamming, euclidean
+from utils.similarity import *
 
 class TestBenchmark(unittest.TestCase):
 
@@ -23,22 +23,30 @@ class TestBenchmark(unittest.TestCase):
         self.assertEqual(list(l[1]), data2)
         self.assertEqual(list(l[2]), data3)
 
-#    def test_build_set_list_desc_similarity_long(self):
-#        data = Orange.data.Table("iris")
-#        def test_metric(metric_fun):
-#            l = build_set_list_desc_similarity(data, 0.5, metric_fun)
-#            dists = [datasets_distance(l[0], x, metric_fun) for x in l]
-#            for i in xrange(1,len(dists)):
-#                self.assertGreaterEqual(dists[i], dists[i-1])
-#            self.assertGreater(dists[-1], dists[0])
-#        test_metric(hamming)
-#        test_metric(euclidean)
-#
-    def test_build_set_list_dec_dist_long(self):
+    def test_build_set_list_desc_similarity_long(self):
+        data = Orange.data.Table("iris")
+        def test_metric(metric_fun):
+            l = build_set_list_desc_similarity(data, 0.5, metric_fun)
+            dists = [datasets_distance(l[0], x, metric_fun) for x in l]
+            for i in xrange(1,len(dists)):
+                self.assertGreaterEqual(dists[i], dists[i-1])
+            self.assertGreater(dists[-1], dists[0])
+        test_metric(hamming)
+        test_metric(euclidean)
+
+    def test_build_set_list_dec_dist(self):
         data = Orange.data.Table("test.tab")
-        l = build_subsets_dec_dist(data)
+        l, d = build_subsets_dec_dist(data)
+        print d
         for i in xrange(1,len(l)):
-            self.assertGreater(len(l[i]), len(l[i-1]))
+            self.assertGreater(sum(l[i]), sum(l[i-1]))
+
+    def test_build_set_list_dec_dist_long(self):
+        data = Orange.data.Table("iris")
+        l, d = build_subsets_dec_dist(data)
+        print d
+        for i in xrange(1,len(l)):
+            self.assertGreater(sum(l[i]), sum(l[i-1]))
 
 if __name__ == '__main__':
     unittest.main()

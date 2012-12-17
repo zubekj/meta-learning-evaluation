@@ -58,6 +58,7 @@ def data_distribution(data):
             sdistr[val] = float(sdistr[val]) / n_vals
     return distr
 
+
 def hellinger_distances_sum(cdistr1, cdistr2):
     """
     Sum of Hellinger distances for two sets of analogous distributions.

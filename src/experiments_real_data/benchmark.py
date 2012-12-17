@@ -107,27 +107,34 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
 def build_subsets_dec_dist(data, rand=Orange.misc.Random(0)):
     """
     Builds a list of subsets of the whole dataset iteratively using greedy approach
-    based on Hellinger distance minimalization.
+    based on Hellinger distance minimalization. Each subset is represented as a list
+    of 0's and 1's, 1 at i-th place means that i-th example belongs to the subset.
     """
-    data_distr = data_distribution(data)
-    unassigned_data = data.get_items(range(len(data)))
-    sets = [Orange.data.Table(data.domain)]
+    ddata = Orange.data.discretization.DiscretizeTable(data,
+                   method=Orange.feature.discretization.EqualFreq(n=len(data)))
 
-    while len(unassigned_data):
-        cset = sets[-1].get_items(range(len(sets[-1])))
+    data_distr = data_distribution(ddata)
+    unassigned_data_ind = range(len(data))
+    sets = [[0] * len(data)]
+    sets_dists = []
+
+    while len(unassigned_data_ind):
+        cset = ddata.select(sets[-1], 1)
         dists = []
-        for d in unassigned_data:
-            cset.append(d)
+        for i in unassigned_data_ind:
+            cset.append(ddata[i])
             cdistr = data_distribution(cset)
             dists.append(hellinger_distances_sum(cdistr, data_distr))
             del cset[-1]
         idx = min(xrange(len(dists)),key=dists.__getitem__)
-        cset.append(unassigned_data[idx])
-        del unassigned_data[idx]
-        sets.append(cset)
+        sets_dists.append(dists[idx])
+        nset = sets[-1][:]
+        nset[unassigned_data_ind[idx]] = 1
+        sets.append(nset)
+        del unassigned_data_ind[idx]
 
-    return sets
-         
+    del sets[0]
+    return sets, sets_dists
 
 def benchmark_generalization(data, rand):
     # Levels: 1. Test data distance (2. Samples, 3. Learner)
