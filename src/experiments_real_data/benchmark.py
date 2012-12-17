@@ -73,7 +73,18 @@ def select_features_proportion(data, test_data, p,
     """
     return select_random_features(data, test_data,
             int(math.ceil(len(data.domain) * p)), random_generator)
-         
+
+def indices_gen(p, rand, data):
+        if p == len(data):
+            return [0] * p
+        if p == 1:
+            ind = [1] * len(data)
+            ind[rand(len(data))] = 0
+            return ind
+        indices2 = Orange.data.sample.SubsetIndices2(p0=p)
+        indices2.random_generator = rand
+        return indices2(data)
+        
 def split_dataset(data, p):
     """
     Splits the data table according to the given proportion.
@@ -104,7 +115,7 @@ def build_set_list_desc_similarity(data, set_size, metric=hamming,
         sets.append(s)
     return sets
 
-def build_subsets_dec_dist(data, rand=Orange.misc.Random(0)):
+def build_subsets_dec_dist(data):
     """
     Builds a list of subsets of the whole dataset iteratively using greedy approach
     based on Hellinger distance minimalization. Each subset is represented as a list
@@ -140,7 +151,6 @@ def benchmark_generalization(data, rand):
     # Levels: 1. Test data distance (2. Samples, 3. Learner)
     levels = 1
     results = {}
-    data.shuffle()
     sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
                                       METRIC, rand)
     step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
@@ -158,19 +168,33 @@ def benchmark_generalization(data, rand):
         results[dists[j]][0] = test_on_data(classifiers, fsets[j])
     return (levels, results)
 
-def benchmark_data_subsets(data, rand):
-    # Levels: 1. Learn subset, 2. Feature subset (3. Samples, 4. Learner)
-    def indices_gen(p, rand, data):
-        if p == len(data):
-            return [0] * p
-        if p == 1:
-            ind = [1] * len(data)
-            ind[rand(len(data))] = 0
-            return ind
-        indices2 = Orange.data.sample.SubsetIndices2(p0=p)
-        indices2.random_generator = rand
-        return indices2(data)
+def benchmark_data_subsets_dec_dist(data, rand):
+    # Levels: 1. Learn subset, (2. Samples, 3. Learner)
+    levels = 1
+    results = {}
 
+    sets, dists = build_subsets_dec_dist(data)
+
+    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
+    if step == 0:
+        fsets = sets
+        fdists = dists
+    else:
+        fsets = [sets[j] for j in xrange(0,len(sets),step)]
+        fdists = [dists[j] for j in xrange(0,len(sets),step)]
+        if fsets[-1] != sets[-1]:
+            fsets.append(sets[-1])
+            fdists.append(dists[-1])
+
+    for i in xrange(len(fsets)):
+        if not fdists[i] in results:
+            results[fdists[i]] = {}
+        results[dists[i]][0] = learn_and_test_on_test_data(LEARNERS, data.select(fsets[i], 1), data)
+    return (levels, results)
+
+def benchmark_data_subsets(data, rand):
+    # Levels: 1. Learn subset (2. Samples, 3. Learner)
+    
     levels = 1
     results = {}
     ind = indices_gen(LEARNING_PROPORTION, rand, data)
@@ -203,8 +227,9 @@ if __name__ == '__main__':
 
     data = Orange.data.Table(data_file)
 
-    levels, results = benchmark_data_subsets(data, rand)
+    #levels, results = benchmark_data_subsets(data, rand)
     #levels, results = benchmark_generalization(data, rand)
+    levels, results = benchmark_data_subsets_dec_dist(data, rand)
 
     learners_names = map(lambda x: x.name, LEARNERS)
 

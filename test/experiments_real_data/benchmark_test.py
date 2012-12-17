@@ -37,14 +37,12 @@ class TestBenchmark(unittest.TestCase):
     def test_build_set_list_dec_dist(self):
         data = Orange.data.Table("test.tab")
         l, d = build_subsets_dec_dist(data)
-        print d
         for i in xrange(1,len(l)):
             self.assertGreater(sum(l[i]), sum(l[i-1]))
 
     def test_build_set_list_dec_dist_long(self):
         data = Orange.data.Table("iris")
         l, d = build_subsets_dec_dist(data)
-        print d
         for i in xrange(1,len(l)):
             self.assertGreater(sum(l[i]), sum(l[i-1]))
 
