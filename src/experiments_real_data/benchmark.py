@@ -120,6 +120,8 @@ def build_subsets_dec_dist(data):
     Builds a list of subsets of the whole dataset iteratively using greedy approach
     based on Hellinger distance minimalization. Each subset is represented as a list
     of 0's and 1's, 1 at i-th place means that i-th example belongs to the subset.
+    
+    TODO: Refactor
     """
     ddata = Orange.data.discretization.DiscretizeTable(data,
                    method=Orange.feature.discretization.EqualFreq(n=len(data)))
@@ -128,20 +130,23 @@ def build_subsets_dec_dist(data):
     unassigned_data_ind = range(len(data))
     sets = [[0] * len(data)]
     sets_dists = []
-
+    cdistr = data_distribution_nn(ddata.select(sets[-1], 1)) 
     while len(unassigned_data_ind):
         cset = ddata.select(sets[-1], 1)
         dists = []
         for i in unassigned_data_ind:
             cset.append(ddata[i])
-            cdistr = data_distribution(cset)
-            dists.append(hellinger_distances_sum(cdistr, data_distr))
+            distribution_nn_add_instance(cdistr, ddata[i])
+            dists.append(hellinger_distances_sum(normalize_distribution(cdistr,
+                len(cset)), data_distr))
             del cset[-1]
-        idx = min(xrange(len(dists)),key=dists.__getitem__)
+            distribution_nn_remove_instance(cdistr, ddata[i])
+        idx = min(xrange(len(dists)), key=dists.__getitem__)
         sets_dists.append(dists[idx])
         nset = sets[-1][:]
         nset[unassigned_data_ind[idx]] = 1
         sets.append(nset)
+        distribution_nn_add_instance(cdistr, ddata[unassigned_data_ind[idx]])
         del unassigned_data_ind[idx]
 
     del sets[0]

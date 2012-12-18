@@ -56,9 +56,25 @@ class TestSimilarity(unittest.TestCase):
 
     def test_data_distribution(self):
         data1 = Orange.data.Table("test.tab")
-        dist = data_distribution(data1)
-        self.assertEqual(dist[(0,)][(1,)], 0.5)
-        self.assertEqual(dist[(2,)][('1',)], 0.25)
+        distr = data_distribution(data1)
+        self.assertEqual(distr[(0,)][(1,)], 0.5)
+        self.assertEqual(distr[(2,)][('1',)], 0.25)
+
+    def test_distribution_nn_add_instance(self):
+        data = Orange.data.Table("test.tab")
+        distr = data_distribution_nn(data)
+        data.append(data[0])
+        distr1 = distribution_nn_add_instance(distr, data[0])
+        distr2 = data_distribution_nn(data)
+        self.assertEqual(distr1[(0,)][(1,)], distr2[(0,)][(1,)])
+
+    def test_distribution_nn_remove_instance(self):
+        data = Orange.data.Table("test.tab")
+        distr = data_distribution_nn(data)
+        distr1 = distribution_nn_remove_instance(distr, data[0])
+        del data[0]
+        distr2 = data_distribution_nn(data)
+        self.assertEqual(distr1[(0,)][(1,)], distr2[(0,)][(1,)])
 
     def test_kl_divergence(self):
         data1 = Orange.data.Table("test.tab")

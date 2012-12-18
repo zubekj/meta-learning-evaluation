@@ -1,4 +1,5 @@
 import operator
+import copy
 from itertools import imap, combinations
 from math import sqrt, log
 
@@ -35,13 +36,8 @@ def euclidean(i1, i2):
 
     return sqrt(sum(imap(lambda x, y: diff(x,y)**2, i1, i2)))
 
-def data_distribution(data):
-    """
-    Calculates a discrete distribution of values in the dataset. All the
-    possible combinations of attributes are taken into account.
-    """
+def data_distribution_nn(data):
     n_attrs = len(data.domain)
-    n_vals = len(data)
     indices = range(n_attrs)
     distr = {}
     for subset_size in xrange(1, n_attrs+1):
@@ -53,11 +49,42 @@ def data_distribution(data):
                     sdistr[val] = 0
                 sdistr[val] += 1
             distr[subset] = sdistr
-    for sdistr in distr.values():
-        for val in sdistr:
-            sdistr[val] = float(sdistr[val]) / n_vals
     return distr
 
+def normalize_distribution(distr, n):
+    return {subset: {val: (float(count) / n)
+                          for (val, count) in sdistr.iteritems()}
+                    for (subset, sdistr) in distr.iteritems()}
+
+def data_distribution(data):
+    """
+    Calculates a discrete distribution of values in the dataset. All the
+    possible combinations of attributes are taken into account.
+    """
+    n = len(data)
+    return normalize_distribution(data_distribution_nn(data), n)
+   
+def distribution_nn_add_instance(distr, instance):
+    """
+    Updates data distribution after adding a new instance.
+    """
+    for subset in distr:
+        sdistr = distr[subset]
+        val = tuple([instance[i].value for i in subset])
+        if val not in sdistr:
+            sdistr[val] = 0
+        sdistr[val] += 1
+    return distr
+
+def distribution_nn_remove_instance(distr, instance):
+    """
+    Updates data distribution after removing an instance.
+    """
+    for subset in distr:
+        sdistr = distr[subset]
+        val = tuple([instance[i].value for i in subset])
+        sdistr[val] -= 1
+    return distr
 
 def hellinger_distances_sum(cdistr1, cdistr2):
     """
