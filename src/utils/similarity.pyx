@@ -139,11 +139,11 @@ def kl_divergence(distr1, distr2):
     return s
     
     
-def build_subsets_dec_dist(data):
+def build_subsets_dec_dist(data, minimalize=True):
     """
     Builds a list of subsets of the whole dataset iteratively using greedy approach
-    based on Hellinger distance minimalization. Each subset is represented as a list
-    of 0's and 1's, 1 at i-th place means that i-th example belongs to the subset.
+    based on Hellinger distance minimalization/maximalization. Each subset is represented
+    as a list of 0's and 1's, 1 at i-th place means that i-th example belongs to the subset.
     
     TODO: Refactor
     """
@@ -165,7 +165,10 @@ def build_subsets_dec_dist(data):
                 len(cset)), data_distr))
             del cset[-1]
             distribution_nn_remove_instance(cdistr, ddata[i])
-        idx = min(xrange(len(dists)), key=dists.__getitem__)
+        if minimalize:
+            idx = min(xrange(len(dists)), key=dists.__getitem__)
+        else:
+            idx = max(xrange(len(dists)), key=dists.__getitem__)
         sets_dists.append(dists[idx])
         nset = sets[-1][:]
         nset[unassigned_data_ind[idx]] = 1

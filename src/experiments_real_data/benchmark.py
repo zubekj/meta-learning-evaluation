@@ -159,7 +159,7 @@ def benchmark_data_subsets_dec_dist(data, rand):
     for i in xrange(len(fsets)):
         if not fdists[i] in results:
             results[fdists[i]] = {}
-        results[dists[i]][0] = learn_and_test_on_test_data(LEARNERS, data.select(fsets[i], 1), data)
+        results[fdists[i]][0] = learn_and_test_on_test_data(LEARNERS, data.select(fsets[i], 1), data)
     return (levels, results)
 
 def benchmark_data_subsets(data, rand):
