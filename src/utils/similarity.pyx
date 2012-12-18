@@ -1,6 +1,7 @@
 import operator
 from itertools import imap, combinations
-from math import sqrt, log
+from math import log
+from libc.math cimport sqrt
 import Orange
 
 def datasets_distance(set1, set2, metric_function):
@@ -64,7 +65,7 @@ def data_distribution(data):
     n = len(data)
     return normalize_distribution(data_distribution_nn(data), n)
    
-def distribution_nn_add_instance(distr, instance):
+cpdef dict distribution_nn_add_instance(dict distr, instance):
     """
     Updates data distribution after adding a new instance.
     """
@@ -76,7 +77,7 @@ def distribution_nn_add_instance(distr, instance):
         sdistr[val] += 1
     return distr
 
-def distribution_nn_remove_instance(distr, instance):
+cpdef dict distribution_nn_remove_instance(dict distr, instance):
     """
     Updates data distribution after removing an instance.
     """
@@ -86,10 +87,11 @@ def distribution_nn_remove_instance(distr, instance):
         sdistr[val] -= 1
     return distr
 
-def hellinger_distances_sum(cdistr1, cdistr2):
+cpdef double hellinger_distances_sum(dict cdistr1, dict cdistr2):
     """
     Sum of Hellinger distances for two sets of analogous distributions.
     """
+    cdef double s
     s = 0
     for k in cdistr1:
         if k in cdistr2:
@@ -101,21 +103,25 @@ def hellinger_distances_sum(cdistr1, cdistr2):
             s += hellinger_distance({}, cdistr2[k])
     return s
 
-def hellinger_distance(distr1, distr2):
+cpdef double hellinger_distance(dict distr1, dict distr2):
     """
     Calculates Hellinger distance between two discrete probability
     distributions.
     """
+    cdef double s, a, b
     s = 0
     for v in distr1:
+        a = distr1[v]
         if v in distr2:
-            s += (distr1[v] - distr2[v]) * (distr1[v] - distr2[v])
+            b = distr2[v]
+            s += (a - b) * (a - b)
         else:
-            s += distr1[v] * distr1[v]
+            s += a * a
     for v in distr2:
         if v not in distr1:
-            s += distr2[v] * distr2[v]
-    return sqrt(s)/sqrt(2)
+            b = distr2[v]
+            s += b * b
+    return sqrt(s/2.)
 
 def kl_divergence(distr1, distr2):
     """
