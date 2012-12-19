@@ -6,7 +6,7 @@ from Orange.classification import ConstantClassifier
 
 sys.path.append('../../src/')
 
-from utils.similarity import *
+from utils.cSimilarity import *
 
 class TestSimilarity(unittest.TestCase):
 
@@ -100,5 +100,35 @@ class TestSimilarity(unittest.TestCase):
         self.assertAlmostEqual(hellinger_distances_sum(distr1, empty_data_distr), 3.13214917)
         self.assertAlmostEqual(hellinger_distances_sum(distr1, distr2), 1.5)
        
+    def test_build_set_list_dec_dist(self):
+        data = Orange.data.Table("test.tab")
+        l, d = build_subsets_dec_dist(data)
+        for i in xrange(1,len(l)):
+            self.assertGreater(sum(l[i]), sum(l[i-1]))
+
+#    def test_build_set_list_dec_dist_long(self):
+#        data = Orange.data.Table("iris")
+#        l, d = build_subsets_dec_dist(data)
+#        for i in xrange(1,len(l)):
+#            self.assertGreater(sum(l[i]), sum(l[i-1]))
+
+    def test_build_max_subsets_list_mc(self):
+        data = Orange.data.Table("test.tab")
+        l = build_max_subsets_list_mc(data)
+        for i in xrange(1,len(l)):
+            self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
+
+    def test_build_min_subsets_list_mc(self):
+        data = Orange.data.Table("test.tab")
+        l = build_min_subsets_list_mc(data)
+        for i in xrange(1,len(l)):
+            self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
+
+#    def test_build_min_subsets_list_mc_long(self):
+#        data = Orange.data.Table("iris")
+#        l = build_min_subsets_list_mc(data)
+#        for i in xrange(1,len(l)):
+#            self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
+
 if __name__ == '__main__':
     unittest.main()

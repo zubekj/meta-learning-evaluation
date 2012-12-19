@@ -75,17 +75,6 @@ def select_features_proportion(data, test_data, p,
     return select_random_features(data, test_data,
             int(math.ceil(len(data.domain) * p)), random_generator)
 
-def indices_gen(p, rand, data):
-        if p == len(data):
-            return [0] * p
-        if p == 1:
-            ind = [1] * len(data)
-            ind[rand(len(data))] = 0
-            return ind
-        indices2 = Orange.data.sample.SubsetIndices2(p0=p)
-        indices2.random_generator = rand
-        return indices2(data)
-        
 def split_dataset(data, p):
     """
     Splits the data table according to the given proportion.

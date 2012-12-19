@@ -37,7 +37,11 @@ def euclidean(i1, i2):
 
     return sqrt(sum(imap(lambda x, y: diff(x,y)**2, i1, i2)))
 
-def data_distribution_nn(data):
+cpdef dict data_distribution_nn(data):
+    cdef int n_attrs, subset_size
+    cdef list indices
+    cdef dict distr, sdistr
+
     n_attrs = len(data.domain)
     indices = range(n_attrs)
     distr = {}
@@ -52,18 +56,25 @@ def data_distribution_nn(data):
             distr[subset] = sdistr
     return distr
 
-def normalize_distribution(distr, n):
+cpdef dict normalize_distribution(distr, int n):
     return {subset: {val: (float(count) / n)
                           for (val, count) in sdistr.iteritems()}
                     for (subset, sdistr) in distr.iteritems()}
 
-def data_distribution(data):
+cpdef dict data_distribution(data):
     """
     Calculates a discrete distribution of values in the dataset. All the
     possible combinations of attributes are taken into account.
     """
+    cdef int n
+    cdef dict distr
+
     n = len(data)
-    return normalize_distribution(data_distribution_nn(data), n)
+    distr = data_distribution_nn(data)
+    for subset in distr:
+        for val in distr[subset]:
+            distr[subset][val] = float(distr[subset][val]) / n
+    return distr
    
 cpdef dict distribution_nn_add_instance(dict distr, instance):
     """
@@ -137,8 +148,86 @@ def kl_divergence(distr1, distr2):
         if v in distr2:
             s += log(distr1[v] / distr2[v], 2) * distr1[v]
     return s
+
+cpdef indices_gen(int p, rand, data):
+        cdef int n
+        n = len(data)
+        if p == n:
+            return [0] * p
+        if p == 1:
+            ind = [1] * n
+            ind[rand(n)] = 0
+            return ind
+        indices2 = Orange.data.sample.SubsetIndices2(p0=p)
+        indices2.random_generator = rand
+        return indices2(data)
+
+cpdef tuple random_subset_dist(ddata, ddata_distr, int n, rand=Orange.misc.Random(0)):
+    """
+    Draws a random subset of size n from the data and returns it along with its Hellinger
+    distance from the whole dataset. Subset is represented with binary mask; 1 at i-th place
+    means that i-th example belongs to the subset.
+    """
+    smask = indices_gen(n, rand, ddata)
+    sdata = ddata.select(smask, 0)
+    sdata_distr = data_distribution(sdata)
+    return smask, hellinger_distances_sum(sdata_distr, ddata_distr)
+
+cdef int MC_ITERATIONS
+MC_ITERATIONS = 50
+
+def build_min_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
+    """
+    Builds a list of subsets of different sizes minimized in terms of Hellinger
+    distance from the whole dataset. Uses Monte Carlo approach.
+    """
+    cdef int i, j
+    cdef double d, min_d
+    cdef list subsets_list
+
+    ddata = Orange.data.discretization.DiscretizeTable(data,
+                   method=Orange.feature.discretization.EqualFreq(n=len(data)))
+    ddata_distr = data_distribution(ddata)
+
+    subsets_list = []
+    if not subset_sizes:
+        subset_sizes = range(len(data)+1)
+    for i in subset_sizes:
+        min_subset, min_d = random_subset_dist(ddata, ddata_distr, i, rand)
+        for j in range(MC_ITERATIONS-1):
+            subset, d = random_subset_dist(ddata, ddata_distr, i, rand)
+            if d < min_d:
+                min_subset = subset
+                min_d = d
+        subsets_list.append((min_subset, min_d))
+    return subsets_list
+
+def build_max_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
+    """
+    Builds a list of subsets of different sizes maximized in terms of Hellinger
+    distance from the whole dataset. Uses Monte Carlo approach.
+    """
+    cdef int i, j
+    cdef double d, max_d
+    cdef list subsets_list
     
-    
+    ddata = Orange.data.discretization.DiscretizeTable(data,
+                   method=Orange.feature.discretization.EqualFreq(n=len(data)))
+    ddata_distr = data_distribution(ddata)
+
+    subsets_list = []
+    if not subset_sizes:
+        subset_sizes = range(len(data)+1)
+    for i in subset_sizes:
+        max_subset, max_d = random_subset_dist(ddata, ddata_distr, i, rand)
+        for j in range(MC_ITERATIONS-1):
+            subset, d = random_subset_dist(ddata, ddata_distr, i, rand)
+            if d > max_d:
+                max_subset = subset
+                max_d = d
+        subsets_list.append((max_subset, max_d))
+    return subsets_list
+   
 def build_subsets_dec_dist(data, minimalize=True):
     """
     Builds a list of subsets of the whole dataset iteratively using greedy approach

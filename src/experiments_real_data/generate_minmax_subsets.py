@@ -15,8 +15,10 @@ if __name__ == '__main__':
 
     data = Orange.data.Table(data_file)
 
-    min_data = build_subsets_dec_dist(data, True)
-    max_data = build_subsets_dec_dist(data, False)
+    rand = Orange.misc.Random(0)
+
+    min_data = build_min_subsets_list_mc(data, range(len(data)), rand)
+    max_data = build_max_subsets_list_mc(data, range(len(data)), rand)
 
     data_path = "{0}_minmax_subsets.pkl".format(data_file)
 
