@@ -124,11 +124,11 @@ class TestSimilarity(unittest.TestCase):
         for i in xrange(1,len(l)):
             self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
 
-#    def test_build_min_subsets_list_mc_long(self):
-#        data = Orange.data.Table("iris")
-#        l = build_min_subsets_list_mc(data)
-#        for i in xrange(1,len(l)):
-#            self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
+    def test_build_min_subsets_list_mc_long(self):
+        data = Orange.data.Table("iris")
+        l = build_min_subsets_list_mc(data)
+        for i in xrange(1,len(l)):
+            self.assertGreater(sum(l[i-1][0]), sum(l[i][0]))
 
 if __name__ == '__main__':
     unittest.main()
