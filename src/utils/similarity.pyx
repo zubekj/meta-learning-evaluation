@@ -69,8 +69,8 @@ cpdef dict data_distribution(data):
     cdef int n
     cdef dict distr
 
-    n = len(data)
     distr = data_distribution_nn(data)
+    n = len(data) * len(distr)
     for subset in distr:
         for val in distr[subset]:
             distr[subset][val] = float(distr[subset][val]) / n
@@ -98,7 +98,7 @@ cpdef dict distribution_nn_remove_instance(dict distr, instance):
         sdistr[val] -= 1
     return distr
 
-cpdef double hellinger_distances_sum(dict cdistr1, dict cdistr2):
+cpdef double hellinger_distance(dict cdistr1, dict cdistr2):
     """
     Sum of Hellinger distances for two sets of analogous distributions.
     """
@@ -106,33 +106,52 @@ cpdef double hellinger_distances_sum(dict cdistr1, dict cdistr2):
     s = 0
     for k in cdistr1:
         if k in cdistr2:
-            s += hellinger_distance(cdistr1[k], cdistr2[k])
+            s += hellinger_distance_p(cdistr1[k], cdistr2[k])
         else:
-            s += hellinger_distance(cdistr1[k], {})
+            s += hellinger_distance_p(cdistr1[k], {})
     for k in cdistr2:
         if not k in cdistr1:
-            s += hellinger_distance({}, cdistr2[k])
-    return s
+            s += hellinger_distance_p({}, cdistr2[k])
+    return sqrt(s/2)
 
-cpdef double hellinger_distance(dict distr1, dict distr2):
+cpdef double hellinger_distance_p(dict distr1, dict distr2):
     """
     Calculates Hellinger distance between two discrete probability
     distributions.
     """
-    cdef double s, a, b
+    cdef double s, a, b, c
     s = 0
     for v in distr1:
         a = distr1[v]
         if v in distr2:
             b = distr2[v]
-            s += (a - b) * (a - b)
+            c = sqrt(a) - sqrt(b)
+            s += c * c
         else:
-            s += a * a
+            s += a
     for v in distr2:
         if v not in distr1:
             b = distr2[v]
-            s += b * b
-    return sqrt(s/2.)
+            s += b
+    return s
+
+cpdef double cdistr_total_sum(dict cdistr):
+    cdef double total_sum, v
+    total_sum = 0
+    for d in cdistr:
+       for v in cdistr[d].itervalues():
+          total_sum += v 
+    return total_sum
+
+cpdef double hellinger_distance_subset(dict cdistr1, dict cdistr2, double cdistr2_sum):
+    cdef double s, a, b
+    s = 0
+    for k in cdistr1:
+       for v in cdistr1[k]:
+          a = cdistr1[k][v]
+          b = cdistr2[k][v]
+          cdistr2_sum += a - 2*sqrt(a*b)
+    return sqrt(cdistr2_sum/2)
 
 def kl_divergence(distr1, distr2):
     """
@@ -171,7 +190,16 @@ cpdef tuple random_subset_dist(ddata, ddata_distr, int n, rand=Orange.misc.Rando
     smask = indices_gen(n, rand, ddata)
     sdata = ddata.select(smask, 0)
     sdata_distr = data_distribution(sdata)
-    return smask, hellinger_distances_sum(sdata_distr, ddata_distr)
+    return smask, hellinger_distance(sdata_distr, ddata_distr)
+
+#cpdef tuple random_subset_dist_opt(ddata, ddata_distr,
+#                                   double ddata_sum, int n,
+#                                   rand=Orange.misc.Random(0)):
+#    smask = indices_gen(n, rand, ddata)
+#    sdata = ddata.select(smask, 0)
+#    sdata_distr = data_distribution(sdata)
+#    return smask, hellinger_distance_subset(sdata_distr, ddata_distr,
+#                                            ddata_sum)
 
 cdef int MC_ITERATIONS
 MC_ITERATIONS = 50
@@ -193,9 +221,11 @@ def build_min_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random
     if not subset_sizes:
         subset_sizes = range(len(data)+1)
     for i in subset_sizes:
-        min_subset, min_d = random_subset_dist(ddata, ddata_distr, i, rand)
+        min_subset, min_d = random_subset_dist(ddata, ddata_distr,
+                                               i, rand)
         for j in range(MC_ITERATIONS-1):
-            subset, d = random_subset_dist(ddata, ddata_distr, i, rand)
+            subset, d = random_subset_dist(ddata, ddata_distr,
+                                           i, rand)
             if d < min_d:
                 min_subset = subset
                 min_d = d
@@ -219,9 +249,11 @@ def build_max_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random
     if not subset_sizes:
         subset_sizes = range(len(data)+1)
     for i in subset_sizes:
-        max_subset, max_d = random_subset_dist(ddata, ddata_distr, i, rand)
+        max_subset, max_d = random_subset_dist(ddata, ddata_distr,
+                                               i, rand)
         for j in range(MC_ITERATIONS-1):
-            subset, d = random_subset_dist(ddata, ddata_distr, i, rand)
+            subset, d = random_subset_dist(ddata, ddata_distr,
+                                               i, rand)
             if d > max_d:
                 max_subset = subset
                 max_d = d
@@ -250,8 +282,8 @@ def build_subsets_dec_dist(data, minimalize=True):
         for i in unassigned_data_ind:
             cset.append(ddata[i])
             distribution_nn_add_instance(cdistr, ddata[i])
-            dists.append(hellinger_distances_sum(normalize_distribution(cdistr,
-                len(cset)), data_distr))
+            dists.append(hellinger_distance(normalize_distribution(cdistr,
+                len(cset)*len(cdistr)), data_distr))
             del cset[-1]
             distribution_nn_remove_instance(cdistr, ddata[i])
         if minimalize:
