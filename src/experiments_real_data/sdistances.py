@@ -14,4 +14,10 @@ class HDistanceConverter(object):
        
     def subset_size(self, hdist):
         i = bisect.bisect_right(self.hdistances, hdist)
-        return self.ssizes[i-1]
+        if i == len(self.ssizes):
+            return self.ssizes[i-1]
+        if i == 0:
+            return self.ssizes[i]
+        
+        h = float(self.ssizes[i] - self.ssizes[i-1]) / float(self.hdistances[i] - self.hdistances[i-1])
+        return int(round(self.ssizes[i-1] + (hdist - self.hdistances[i-1]) * h))

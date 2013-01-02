@@ -12,10 +12,9 @@ from Orange.classification.svm import kernels
 
 sys.path.append('../')
 
-#from utils.similarity import *
 from utils.cSimilarity import *
 
-import datasets
+import sdistances
 
 class OrangeRandom(random.Random):
     
@@ -35,6 +34,7 @@ LEARNING_PROPORTION = 0.7
 GENERALIZATION_PROPORTION = 0.5
 GENERALIZED_SETS = 20
 LEARN_SUBSETS = [1 - math.log(x, 11) for x in xrange(10, 0, -1)] # Log scale
+HDISTANCES = [i*0.05 for i in xrange(20)] 
 SAMPLE_SIZE = 10
 FEATURE_SUBSETS = [1.0]
 LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
@@ -177,7 +177,7 @@ def benchmark_data_subsets(data, rand):
                                                              sn_ldata, test_data)
     return (levels, results)
 
-def benchmark_data_subsets_hellinger(data, rand):
+def benchmark_data_subsets_hellinger(data, rand, conv):
     # Levels: 1. Learn subset distance (2. Samples, 3. Learner)
     
     levels = 1
@@ -186,20 +186,8 @@ def benchmark_data_subsets_hellinger(data, rand):
     ddata = Orange.data.discretization.DiscretizeTable(data,
                 method=Orange.feature.discretization.EqualFreq(n=dlen))
     ddata_distr = data_distribution(ddata)
-    # Increasing subsets by single instances
-    for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
-        sample_results = {}
-        dists = []
-        for i in xrange(SAMPLE_SIZE):
-            ind = indices_gen(sn, rand, data)
-            sn_data = data.select(ind, 0)
-            sn_ddata = ddata.select(ind, 0)
-            dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
-            sample_results[i] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
-        results[float(sum(dists))/SAMPLE_SIZE] = sample_results
-    # Increasing subsets by proportions
-    for sp in LEARN_SUBSETS:
-        sn = int(sp * dlen)
+    for sp in HDISTANCES:
+        sn = conv.subset_size(sp)
         sample_results = {}
         dists = []
         for i in xrange(SAMPLE_SIZE):
@@ -220,10 +208,12 @@ if __name__ == '__main__':
 
     data = Orange.data.Table(data_file)
 
+    conv = sdistances.HDistanceConverter("subset_plots/{0}.tab".format(data_file))
+
     #levels, results = benchmark_data_subsets(data, rand)
     #levels, results = benchmark_generalization(data, rand)
     #levels, results = benchmark_data_subsets_dec_dist(data, rand)
-    levels, results = benchmark_data_subsets_hellinger(data, rand)
+    levels, results = benchmark_data_subsets_hellinger(data, rand, conv)
 
     learners_names = map(lambda x: x.name, LEARNERS)
 
