@@ -177,6 +177,38 @@ def benchmark_data_subsets(data, rand):
                                                              sn_ldata, test_data)
     return (levels, results)
 
+def benchmark_data_subsets_hellinger(data, rand):
+    # Levels: 1. Learn subset distance (2. Learner)
+    
+    levels = 1
+    results = {}
+    dlen = len(data)
+    ddata = Orange.data.discretization.DiscretizeTable(data,
+                method=Orange.feature.discretization.EqualFreq(n=dlen))
+    ddata_distr = data_distribution(ddata)
+    # Increasing subsets by single instances
+    for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
+        for i in xrange(SAMPLE_SIZE):
+            ind = indices_gen(sn, rand, data)
+            sn_data = data.select(ind, 0)
+            sn_ddata = ddata.select(ind, 0)
+            dist = hellinger_distance(data_distribution(sn_ddata), ddata_distr)
+            if dist not in results:
+                results[dist] = {}
+            results[dist][0] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+    # Increasing subsets by proportions
+    for sp in LEARN_SUBSETS:
+        sn = int(sp * dlen)
+        for i in xrange(SAMPLE_SIZE):
+            ind = indices_gen(sn, rand, data)
+            sn_data = data.select(ind, 0)
+            sn_ddata = ddata.select(ind, 0)
+            dist = hellinger_distance(data_distribution(sn_ddata), ddata_distr)
+            if dist not in results:
+                results[dist] = {}
+            results[dist][0] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+    return (levels, results)
+
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
@@ -188,7 +220,8 @@ if __name__ == '__main__':
 
     #levels, results = benchmark_data_subsets(data, rand)
     #levels, results = benchmark_generalization(data, rand)
-    levels, results = benchmark_data_subsets_dec_dist(data, rand)
+    #levels, results = benchmark_data_subsets_dec_dist(data, rand)
+    levels, results = benchmark_data_subsets_hellinger(data, rand)
 
     learners_names = map(lambda x: x.name, LEARNERS)
 
