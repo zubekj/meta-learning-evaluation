@@ -178,7 +178,7 @@ def benchmark_data_subsets(data, rand):
     return (levels, results)
 
 def benchmark_data_subsets_hellinger(data, rand):
-    # Levels: 1. Learn subset distance (2. Learner)
+    # Levels: 1. Learn subset distance (2. Samples, 3. Learner)
     
     levels = 1
     results = {}
@@ -188,25 +188,27 @@ def benchmark_data_subsets_hellinger(data, rand):
     ddata_distr = data_distribution(ddata)
     # Increasing subsets by single instances
     for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
+        sample_results = {}
+        dists = []
         for i in xrange(SAMPLE_SIZE):
             ind = indices_gen(sn, rand, data)
             sn_data = data.select(ind, 0)
             sn_ddata = ddata.select(ind, 0)
-            dist = hellinger_distance(data_distribution(sn_ddata), ddata_distr)
-            if dist not in results:
-                results[dist] = {}
-            results[dist][0] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+            dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
+            sample_results[i] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+        results[float(sum(dists))/SAMPLE_SIZE] = sample_results
     # Increasing subsets by proportions
     for sp in LEARN_SUBSETS:
         sn = int(sp * dlen)
+        sample_results = {}
+        dists = []
         for i in xrange(SAMPLE_SIZE):
             ind = indices_gen(sn, rand, data)
             sn_data = data.select(ind, 0)
             sn_ddata = ddata.select(ind, 0)
-            dist = hellinger_distance(data_distribution(sn_ddata), ddata_distr)
-            if dist not in results:
-                results[dist] = {}
-            results[dist][0] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+            dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
+            sample_results[i] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+        results[float(sum(dists))/SAMPLE_SIZE] = sample_results
     return (levels, results)
 
 if __name__ == '__main__':
