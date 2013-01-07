@@ -1,4 +1,5 @@
 import Orange
+from Orange.classification import Classifier
 
 class MajorityVoteClassifier(Orange.ensemble.bagging.BaggedClassifier):
     """
@@ -26,8 +27,8 @@ class RandomDecidesClassifier(Orange.classification.Classifier):
         self.classifiers = classifiers
         self.rand = rand
 
-    def __call__(self, instance):
-        return self.classifiers[self.rand(len(self.classifiers))](instance)
+    def __call__(self, instance, result_type=Classifier.GetValue):
+        return self.classifiers[self.rand(len(self.classifiers))](instance, result_type)
 
 class BestDecidesClassifier(Orange.classification.Classifier):
     """
@@ -41,11 +42,11 @@ class BestDecidesClassifier(Orange.classification.Classifier):
         self.classifiers = classifiers
         self.scoring_fun = scoring_fun
 
-    def __call__(self, instance):
+    def __call__(self, instance, result_type=Classifier.GetValue):
         def index_max(values):
             return max(xrange(len(values)), key=values.__getitem__)
         return self.classifiers[index_max(map(self.scoring_fun,
-                                              self.classifiers))](instance)
+                                              self.classifiers))](instance, result_type)
 
 class WeightedVoteClassifier(Orange.classification.Classifier):
     """
@@ -60,7 +61,10 @@ class WeightedVoteClassifier(Orange.classification.Classifier):
         self.classifiers = classifiers
         self.scoring_fun = scoring_fun
 
-    def __call__(self, instance):
+    def __call__(self, instance, result_type=Classifier.GetValue):
+        if result_type != Classifier.GetValue:
+            raise NotImplementedError
+        
         votes = {}
         for c in self.classifiers:
             cls = c(instance)
@@ -87,7 +91,10 @@ class WeightedConfidenceSharingClassifier(Orange.classification.Classifier):
         if not self.scoring_fun:
             self.scoring_fun = lambda c, p: p
 
-    def __call__(self, instance):
+    def __call__(self, instance, result_type=Classifier.GetValue):
+        if result_type != Classifier.GetValue:
+            raise NotImplementedError
+
         votes = {}
         for c in self.classifiers:
             cls, prob = c(instance, Orange.classification.Classifier.GetBoth)

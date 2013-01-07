@@ -13,7 +13,7 @@ from Orange.classification.svm import kernels
 sys.path.append('../')
 
 from utils.cSimilarity import *
-from utils.ensemble import MajorityVoteClassifier
+from utils.ensemble import *
 import sdistances
 
 class OrangeRandom(random.Random):
@@ -52,6 +52,7 @@ LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
                                         rand=OrangeRandom(rand)),
             Orange.classification.majority.MajorityLearner(name="majority")
             ]
+ADD_LEARNERS_NAMES = ["vote", "wcs"]
 
 def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
@@ -197,7 +198,9 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
             classifiers = [l(sn_data) for l in LEARNERS]
             majority_vote = MajorityVoteClassifier(list(classifiers), name="vote")
+            wcs = WeightedConfidenceSharingClassifier(list(classifiers), name="wcs")
             classifiers.append(majority_vote)
+            classifiers.append(wcs)
             sample_results[i] = test_on_data(classifiers, data)
         results[float(sum(dists))/SAMPLE_SIZE] = sample_results
     return (levels, results)
@@ -218,9 +221,8 @@ if __name__ == '__main__':
     #levels, results = benchmark_data_subsets_dec_dist(data, rand)
     levels, results = benchmark_data_subsets_hellinger(data, rand, conv)
 
-    #learners_names = map(lambda x: x.name, LEARNERS)
     learners_names = map(lambda x: x.name, LEARNERS)
-    learners_names.append("vote")
+    learners_names.extend(ADD_LEARNERS_NAMES)
 
     data_path = "{0}_data.pkl".format(data_file)
 
