@@ -53,5 +53,15 @@ class TestEnsemble(unittest.TestCase):
         c = WeightedVoteClassifier([self.c0, self.c1, self.c0], get_score)
         self.assertEqual(c(i), self.class0)
 
+    def test_weighted_confidence(self):
+        def get_score(c):
+            if c == self.c0:
+                return 0.33
+            else:
+                return 0.6
+        i = self.data[0]
+        c = WeightedConfidenceSharingClassifier([self.c0, self.c1, self.c0])
+        self.assertEqual(c(i), self.class0)
+
 if __name__ == '__main__':
     unittest.main()

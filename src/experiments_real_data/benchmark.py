@@ -13,7 +13,7 @@ from Orange.classification.svm import kernels
 sys.path.append('../')
 
 from utils.cSimilarity import *
-
+from utils.ensemble import MajorityVoteClassifier
 import sdistances
 
 class OrangeRandom(random.Random):
@@ -195,7 +195,10 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             sn_data = data.select(ind, 0)
             sn_ddata = ddata.select(ind, 0)
             dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
-            sample_results[i] = learn_and_test_on_test_data(LEARNERS, sn_data, data)
+            classifiers = [l(sn_data) for l in LEARNERS]
+            majority_vote = MajorityVoteClassifier(list(classifiers), name="vote")
+            classifiers.append(majority_vote)
+            sample_results[i] = test_on_data(classifiers, data)
         results[float(sum(dists))/SAMPLE_SIZE] = sample_results
     return (levels, results)
 
@@ -215,7 +218,9 @@ if __name__ == '__main__':
     #levels, results = benchmark_data_subsets_dec_dist(data, rand)
     levels, results = benchmark_data_subsets_hellinger(data, rand, conv)
 
+    #learners_names = map(lambda x: x.name, LEARNERS)
     learners_names = map(lambda x: x.name, LEARNERS)
+    learners_names.append("vote")
 
     data_path = "{0}_data.pkl".format(data_file)
 

@@ -55,7 +55,7 @@ class WeightedVoteClassifier(Orange.classification.Classifier):
     """
 
     def __init__(self, classifiers, scoring_fun,
-                 name="BestDecidesClassifier"):
+                 name="WeightedVoteClassifier"):
         self.name = name
         self.classifiers = classifiers
         self.scoring_fun = scoring_fun
@@ -68,4 +68,32 @@ class WeightedVoteClassifier(Orange.classification.Classifier):
             if ncls not in votes:
                 votes[ncls] = [cls, 0]
             votes[ncls][1] += self.scoring_fun(c) 
+        return max(votes.values(), key=lambda x: x[1])[0]
+
+class WeightedConfidenceSharingClassifier(Orange.classification.Classifier):
+    """
+    Returns the class which received the most support from the classifiers
+    passed to the constructor. Support from a single classifier is
+    proportional to its confidence. Standard Orange probabilities estimations
+    are used. Additional scoring function may be provided to scale probabilities
+    differently for each classifier.
+    """
+
+    def __init__(self, classifiers, scoring_fun=None,
+                 name="WeightedConfidenceSharingClassifier"):
+        self.name = name
+        self.classifiers = classifiers
+        self.scoring_fun = scoring_fun
+        if not self.scoring_fun:
+            self.scoring_fun = lambda c, p: p
+
+    def __call__(self, instance):
+        votes = {}
+        for c in self.classifiers:
+            cls, prob = c(instance, Orange.classification.Classifier.GetBoth)
+            mprob = max(prob)
+            ncls = cls.native()
+            if ncls not in votes:
+                votes[ncls] = [cls, 0]
+            votes[ncls][1] += self.scoring_fun(c, mprob) 
         return max(votes.values(), key=lambda x: x[1])[0]
