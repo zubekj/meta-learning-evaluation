@@ -62,17 +62,24 @@ class WeightedVoteClassifier(Orange.classification.Classifier):
         self.scoring_fun = scoring_fun
 
     def __call__(self, instance, result_type=Classifier.GetValue):
-        if result_type != Classifier.GetValue:
+        if instance.domain.class_vars:
             raise NotImplementedError
         
-        votes = {}
+        cvals = instance.domain.class_var.values
+        votes = [0] * len(cvals)
         for c in self.classifiers:
             cls = c(instance)
-            ncls = cls.native()
-            if ncls not in votes:
-                votes[ncls] = [cls, 0]
-            votes[ncls][1] += self.scoring_fun(c) 
-        return max(votes.values(), key=lambda x: x[1])[0]
+            votes[cvals.index(cls.native())] += self.scoring_fun(c)
+        cprob = Orange.statistics.distribution.Discrete(votes)
+        cprob.normalize()
+        cval = Orange.data.Value(instance.domain.class_var, cprob.values().index(max(cprob)))
+
+        if result_type == Classifier.GetValue:    
+            return cval
+        elif result_type == Classifier.GetProbabilities:
+            return cprob
+        else:
+            return [cval, cprob]
 
 class WeightedConfidenceSharingClassifier(Orange.classification.Classifier):
     """
@@ -92,15 +99,22 @@ class WeightedConfidenceSharingClassifier(Orange.classification.Classifier):
             self.scoring_fun = lambda c, p: p
 
     def __call__(self, instance, result_type=Classifier.GetValue):
-        if result_type != Classifier.GetValue:
+        if instance.domain.class_vars:
             raise NotImplementedError
-
-        votes = {}
+        
+        cvals = instance.domain.class_var.values
+        votes = [0] * len(cvals)
         for c in self.classifiers:
             cls, prob = c(instance, Orange.classification.Classifier.GetBoth)
             mprob = max(prob)
-            ncls = cls.native()
-            if ncls not in votes:
-                votes[ncls] = [cls, 0]
-            votes[ncls][1] += self.scoring_fun(c, mprob) 
-        return max(votes.values(), key=lambda x: x[1])[0]
+            votes[cvals.index(cls.native())] += self.scoring_fun(c, mprob)
+        cprob = Orange.statistics.distribution.Discrete(votes)
+        cprob.normalize()
+        cval = Orange.data.Value(instance.domain.class_var, cprob.values().index(max(cprob)))
+
+        if result_type == Classifier.GetValue:    
+            return cval
+        elif result_type == Classifier.GetProbabilities:
+            return cprob
+        else:
+            return [cval, cprob]

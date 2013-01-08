@@ -15,6 +15,7 @@ sys.path.append('../')
 from utils.cSimilarity import *
 from utils.ensemble import *
 import sdistances
+import evaluate
 
 class OrangeRandom(random.Random):
     
@@ -52,7 +53,7 @@ LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
                                         rand=OrangeRandom(rand)),
             Orange.classification.majority.MajorityLearner(name="majority")
             ]
-ADD_LEARNERS_NAMES = ["vote", "wcs"]
+LEARNERS_NAMES = [l.name for l in LEARNERS] + ["vote", "wcs"]
 
 def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
@@ -85,98 +86,98 @@ def split_dataset(data, p):
     t2 = data.get_items_ref(range(int(math.ceil(p*l)), l))
     return (t1, t2)
 
-def build_set_list_desc_similarity(data, set_size, metric=hamming,
-                                   rand=Orange.misc.Random(0)):
-    """
-    Builds a list of subsets of data in which each consecutive subset is less
-    similar to the first one (uses utils.similarity.datasets_distance). Each
-    subset is of size S = set_size * len(data).
-    """
-    def distance_to_s0(x):
-        return instance_dataset_distance(x, s0, metric)
-    s0, _ = split_dataset(data, set_size)
-    asc_list = sorted([(distance_to_s0(i), i) for i in data])
-    sets = [s0]
-    s_dists = [(0, i) for i in xrange(len(s0))]
-    for i in xrange(len(s0), len(asc_list)):
-        s = sets[-1].get_items(range(len(sets[-1])))
-        idx = heapq.heappop(s_dists)[1]
-        s[idx] = asc_list[i][1]
-        heapq.heappush(s_dists, (asc_list[i][0], idx))
-        sets.append(s)
-    return sets
-
-
-def benchmark_generalization(data, rand):
-    # Levels: 1. Test data distance (2. Samples, 3. Learner)
-    levels = 1
-    results = {}
-    sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
-                                      METRIC, rand)
-    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
-    if step == 0:
-        fsets = sets
-    else:
-        fsets = [sets[j] for j in xrange(0,len(sets),step)]
-        if fsets[-1] != sets[-1]:
-            fsets.append(sets[-1])
-    dists = map(lambda s: datasets_distance(fsets[0], s, euclidean), fsets)
-    classifiers = map(lambda l: l(fsets[0]), LEARNERS)
-    for j in xrange(len(fsets)):
-        if not dists[j] in results:
-            results[dists[j]] = {}
-        results[dists[j]][0] = test_on_data(classifiers, fsets[j])
-    return (levels, results)
-
-def benchmark_data_subsets_dec_dist(data, rand):
-    # Levels: 1. Learn subset, (2. Samples, 3. Learner)
-    levels = 1
-    results = {}
-
-    sets, dists = build_subsets_dec_dist(data)
-
-    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
-    if step == 0:
-        fsets = sets
-        fdists = dists
-    else:
-        fsets = [sets[j] for j in xrange(0,len(sets),step)]
-        fdists = [dists[j] for j in xrange(0,len(sets),step)]
-        if fsets[-1] != sets[-1]:
-            fsets.append(sets[-1])
-            fdists.append(dists[-1])
-
-    for i in xrange(len(fsets)):
-        if not fdists[i] in results:
-            results[fdists[i]] = {}
-        results[fdists[i]][0] = learn_and_test_on_test_data(LEARNERS, data.select(fsets[i], 1), data)
-    return (levels, results)
-
-def benchmark_data_subsets(data, rand):
-    # Levels: 1. Learn subset (2. Samples, 3. Learner)
-    
-    levels = 1
-    results = {}
-    ind = indices_gen(LEARNING_PROPORTION, rand, data)
-    learn_data = data.select(ind, 0)
-    test_data = data.select(ind, 1)
-    dlen = len(learn_data)
-    # Increasing subsets by single instances
-    for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
-        results[sn] = {}
-        for i in xrange(SAMPLE_SIZE):
-            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
-            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
-                                                             sn_ldata, test_data)
-    # Increasing subsets by proportions
-    for sp in LEARN_SUBSETS:
-        sn = int(sp * dlen)
-        results[sn] = {}
-        for i in xrange(SAMPLE_SIZE):
-            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
-            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
-                                                             sn_ldata, test_data)
-    return (levels, results)
+#def build_set_list_desc_similarity(data, set_size, metric=hamming,
+#                                   rand=Orange.misc.Random(0)):
+#    """
+#    Builds a list of subsets of data in which each consecutive subset is less
+#    similar to the first one (uses utils.similarity.datasets_distance). Each
+#    subset is of size S = set_size * len(data).
+#    """
+#    def distance_to_s0(x):
+#        return instance_dataset_distance(x, s0, metric)
+#    s0, _ = split_dataset(data, set_size)
+#    asc_list = sorted([(distance_to_s0(i), i) for i in data])
+#    sets = [s0]
+#    s_dists = [(0, i) for i in xrange(len(s0))]
+#    for i in xrange(len(s0), len(asc_list)):
+#        s = sets[-1].get_items(range(len(sets[-1])))
+#        idx = heapq.heappop(s_dists)[1]
+#        s[idx] = asc_list[i][1]
+#        heapq.heappush(s_dists, (asc_list[i][0], idx))
+#        sets.append(s)
+#    return sets
+#
+#
+#def benchmark_generalization(data, rand):
+#    # Levels: 1. Test data distance (2. Samples, 3. Learner)
+#    levels = 1
+#    results = {}
+#    sets = build_set_list_desc_similarity(data, GENERALIZATION_PROPORTION,
+#                                      METRIC, rand)
+#    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
+#    if step == 0:
+#        fsets = sets
+#    else:
+#        fsets = [sets[j] for j in xrange(0,len(sets),step)]
+#        if fsets[-1] != sets[-1]:
+#            fsets.append(sets[-1])
+#    dists = map(lambda s: datasets_distance(fsets[0], s, euclidean), fsets)
+#    classifiers = map(lambda l: l(fsets[0]), LEARNERS)
+#    for j in xrange(len(fsets)):
+#        if not dists[j] in results:
+#            results[dists[j]] = {}
+#        results[dists[j]][0] = test_on_data(classifiers, fsets[j])
+#    return (levels, results)
+#
+#def benchmark_data_subsets_dec_dist(data, rand):
+#    # Levels: 1. Learn subset, (2. Samples, 3. Learner)
+#    levels = 1
+#    results = {}
+#
+#    sets, dists = build_subsets_dec_dist(data)
+#
+#    step = int(math.ceil(float(len(sets)) / GENERALIZED_SETS))
+#    if step == 0:
+#        fsets = sets
+#        fdists = dists
+#    else:
+#        fsets = [sets[j] for j in xrange(0,len(sets),step)]
+#        fdists = [dists[j] for j in xrange(0,len(sets),step)]
+#        if fsets[-1] != sets[-1]:
+#            fsets.append(sets[-1])
+#            fdists.append(dists[-1])
+#
+#    for i in xrange(len(fsets)):
+#        if not fdists[i] in results:
+#            results[fdists[i]] = {}
+#        results[fdists[i]][0] = learn_and_test_on_test_data(LEARNERS, data.select(fsets[i], 1), data)
+#    return (levels, results)
+#
+#def benchmark_data_subsets(data, rand):
+#    # Levels: 1. Learn subset (2. Samples, 3. Learner)
+#    
+#    levels = 1
+#    results = {}
+#    ind = indices_gen(LEARNING_PROPORTION, rand, data)
+#    learn_data = data.select(ind, 0)
+#    test_data = data.select(ind, 1)
+#    dlen = len(learn_data)
+#    # Increasing subsets by single instances
+#    for sn in xrange(1, int(LEARN_SUBSETS[0] * dlen)):
+#        results[sn] = {}
+#        for i in xrange(SAMPLE_SIZE):
+#            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
+#            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
+#                                                             sn_ldata, test_data)
+#    # Increasing subsets by proportions
+#    for sp in LEARN_SUBSETS:
+#        sn = int(sp * dlen)
+#        results[sn] = {}
+#        for i in xrange(SAMPLE_SIZE):
+#            sn_ldata = learn_data.select(indices_gen(sn, rand, learn_data), 0)
+#            results[sn][i] = learn_and_test_on_test_data(LEARNERS,
+#                                                             sn_ldata, test_data)
+#    return (levels, results)
 
 def benchmark_data_subsets_hellinger(data, rand, conv):
     # Levels: 1. Learn subset distance (2. Samples, 3. Learner)
@@ -187,6 +188,7 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
     ddata = Orange.data.discretization.DiscretizeTable(data,
                 method=Orange.feature.discretization.EqualFreq(n=dlen))
     ddata_distr = data_distribution(ddata)
+
     for sp in HDISTANCES:
         sn = conv.subset_size(sp)
         sample_results = {}
@@ -196,13 +198,22 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             sn_data = data.select(ind, 0)
             sn_ddata = ddata.select(ind, 0)
             dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
+            
             classifiers = [l(sn_data) for l in LEARNERS]
             majority_vote = MajorityVoteClassifier(list(classifiers), name="vote")
             wcs = WeightedConfidenceSharingClassifier(list(classifiers), name="wcs")
             classifiers.append(majority_vote)
             classifiers.append(wcs)
-            sample_results[i] = test_on_data(classifiers, data)
-        results[float(sum(dists))/SAMPLE_SIZE] = sample_results
+
+            CAs = Orange.evaluation.scoring.CA(test_on_data(classifiers, data))
+            sample_results[i] = {}
+            for idx, classifier in enumerate(LEARNERS_NAMES):
+                sample_results[i][classifier] = {}
+                sample_results[i][classifier]['CA'] = CAs[idx]
+        mean_results = evaluate.dict_recur_mean_err(sample_results.values())   
+        mean_dist = float(sum(dists))/SAMPLE_SIZE
+        results[mean_dist] = mean_results
+
     return (levels, results)
 
 if __name__ == '__main__':
@@ -221,13 +232,8 @@ if __name__ == '__main__':
     #levels, results = benchmark_data_subsets_dec_dist(data, rand)
     levels, results = benchmark_data_subsets_hellinger(data, rand, conv)
 
-    learners_names = map(lambda x: x.name, LEARNERS)
-    learners_names.extend(ADD_LEARNERS_NAMES)
-
-    data_path = "{0}_data.pkl".format(data_file)
-
+    data_path = "{0}_results.pkl".format(data_file)
     data_file = open(data_path, "wb")
-    cPickle.dump(learners_names, data_file)
-    cPickle.dump(levels, data_file)
+    cPickle.dump(LEARNERS_NAMES, data_file)
     cPickle.dump(results, data_file)
     data_file.close()
