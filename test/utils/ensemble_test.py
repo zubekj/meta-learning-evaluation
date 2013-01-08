@@ -44,24 +44,24 @@ class TestEnsemble(unittest.TestCase):
     def test_weighted_vote(self):
         def get_score(c):
             if c == self.c0:
-                return 0.33
+                return 0.4
             else:
                 return 0.6
         i = self.data[0]
         c = WeightedVoteClassifier([self.c0, self.c1], get_score)
         self.assertEqual(c(i), self.class1)
+        probs = c(i, Orange.classification.Classifier.GetProbabilities).values()
+        self.assertAlmostEqual(probs[0], 0.4)
+        self.assertAlmostEqual(probs[1], 0.6)
         c = WeightedVoteClassifier([self.c0, self.c1, self.c0], get_score)
         self.assertEqual(c(i), self.class0)
 
     def test_weighted_confidence(self):
-        def get_score(c):
-            if c == self.c0:
-                return 0.33
-            else:
-                return 0.6
         i = self.data[0]
         c = WeightedConfidenceSharingClassifier([self.c0, self.c1, self.c0])
         self.assertEqual(c(i), self.class0)
+        probs = c(i, Orange.classification.Classifier.GetProbabilities).values()
+        self.assertAlmostEqual(probs[0], 0.66666668)
 
 if __name__ == '__main__':
     unittest.main()
