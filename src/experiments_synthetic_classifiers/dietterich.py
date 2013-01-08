@@ -1,7 +1,11 @@
-# Description: Class that embeds artificial classifier, with embedded information about how often it mistakes.
-# Category:	modelling
+'''
+Class that embeds artificial classifier, with embedded information about 
+how often it mistakes.
 
-import orange, random, Orange
+@author: mlukasik
+'''
+
+import orange, random
 
 class Learner(object):
 	def __new__(cls, examples=None, **kwds):
@@ -14,7 +18,9 @@ class Learner(object):
 	
 	def __init__(self, accuracy, field_name = "field_name", name='diettrich learner', **kwds):
 		'''
-		@param field_name: name of a meta attribute storing information about true classification. The reason for this argument is that functions for testing in Orange delete information about classification.
+		@param field_name: name of a meta attribute storing information about
+		 true classification. The reason for this argument is that functions
+		 for testing in Orange delete information about classification.
 		'''
 		self.__dict__.update(kwds)
 		self.accuracy = accuracy
@@ -24,7 +30,9 @@ class Learner(object):
 	def __call__(self, examples, weight=None, **kwds):
 		for k in kwds.keys():
 			self.__dict__[k] = kwds[k]
-		return Classifier(accuracy = self.accuracy, field_name = self.field_name, name=self.name, domain=examples.domain)
+		return Classifier(accuracy = self.accuracy, field_name = 
+						self.field_name, name=self.name, 
+						domain=examples.domain)
 
 class Classifier:
 	def __init__(self, **kwds):
@@ -33,7 +41,8 @@ class Classifier:
 	def __call__(self, example, resultType = orange.GetValue):
 		'''
 		Classify a sample.
-		@param example: a sample to be classified. Assumed, that there is a meta-attribute called field_name.
+		@param example: a sample to be classified. Assumed, that there is a 
+		meta-attribute called field_name.
 		@param resulttype: Orange framework style
 		'''
 		if random.random() < self.accuracy:
@@ -42,7 +51,8 @@ class Classifier:
 			#randomly select other value (uniformly)
 			classification_values = self.domain[self.field_name].values
 			try:
-				index = self.domain[self.field_name].values.index(str(example[self.field_name]))
+				index = self.domain[self.field_name].values. \
+					index(str(example[self.field_name]))
 			except:
 				print "probably unknown class - return whatever"
 				index = random.randint(0, len(classification_values)-1)

@@ -7,3 +7,8 @@
 *.log
 *.sql
 *.sqlite
+
+# Project files #
+######################
+.pydevproject
+.project
