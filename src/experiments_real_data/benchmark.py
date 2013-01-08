@@ -53,7 +53,7 @@ LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
                                         rand=OrangeRandom(rand)),
             Orange.classification.majority.MajorityLearner(name="majority")
             ]
-LEARNERS_NAMES = [l.name for l in LEARNERS] + ["vote", "wcs"]
+LEARNERS_NAMES = [l.name for l in LEARNERS] + ["vote", "wcs", "current_best"]
 
 def select_random_features(data, test_data, n, random_generator=Orange.misc.Random(0)):
     """
@@ -189,6 +189,14 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
                 method=Orange.feature.discretization.EqualFreq(n=dlen))
     ddata_distr = data_distribution(ddata)
 
+    mean_dist = None
+
+    def get_current_CA(classifier):
+        if mean_dist:
+            return results[mean_dist][classifier.name]['CA'][0]
+        else:
+            return 1.0
+
     for sp in HDISTANCES:
         sn = conv.subset_size(sp)
         sample_results = {}
@@ -200,16 +208,23 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
             
             classifiers = [l(sn_data) for l in LEARNERS]
+            for j in xrange(len(LEARNERS)):
+                classifiers[j].name = LEARNERS[j].name
+
             majority_vote = MajorityVoteClassifier(list(classifiers), name="vote")
             wcs = WeightedConfidenceSharingClassifier(list(classifiers), name="wcs")
+            current_best = BestDecidesClassifier(list(classifiers), get_current_CA,
+                                                 name="current_best")
             classifiers.append(majority_vote)
             classifiers.append(wcs)
+            classifiers.append(current_best)
 
             CAs = Orange.evaluation.scoring.CA(test_on_data(classifiers, data))
             sample_results[i] = {}
             for idx, classifier in enumerate(LEARNERS_NAMES):
                 sample_results[i][classifier] = {}
                 sample_results[i][classifier]['CA'] = CAs[idx]
+        
         mean_results = evaluate.dict_recur_mean_err(sample_results.values())   
         mean_dist = float(sum(dists))/SAMPLE_SIZE
         results[mean_dist] = mean_results
