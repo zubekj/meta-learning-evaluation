@@ -1,8 +1,7 @@
-import os
 import unittest
 import sys
 
-sys.path.append('../../src/experiments_synthetic_classifiers')
+sys.path.append('../../src/experiments_synthetic_classifiers/')
 
 import dietterich
 import orange, Orange
@@ -18,11 +17,17 @@ class TestDietterich(unittest.TestCase):
 		e[name] = e.getclass()
 	
 	def test0(self):
-		dl = Orange.evaluation.testing.cross_validation([dietterich.Learner(accuracy=0, field_name="field_name")], self.data)
+		dl = Orange.evaluation.testing. \
+		cross_validation([dietterich.Learner(accuracy=0, \
+											field_name="field_name")], \
+						self.data)
 		self.assertEqual(Orange.evaluation.scoring.CA(dl), [0])
 		
 	def test1(self):
-		dl = Orange.evaluation.testing.cross_validation([dietterich.Learner(accuracy=1, field_name="field_name")], self.data)
+		dl = Orange.evaluation.testing. \
+		cross_validation([dietterich.Learner(accuracy=1, \
+											field_name="field_name")], \
+						self.data)
 		self.assertEqual(Orange.evaluation.scoring.CA(dl), [1])
 
 
