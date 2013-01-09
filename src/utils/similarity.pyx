@@ -42,11 +42,12 @@ cpdef dict data_distribution_nn(data):
     cdef list indices
     cdef dict distr, sdistr
 
-    n_attrs = len(data.domain)
+    n_attrs = len(data.domain)-1
     indices = range(n_attrs)
     distr = {}
     for subset_size in xrange(1, n_attrs+1):
         for subset in combinations(indices, subset_size):
+            subset += (n_attrs,)
             sdistr = {}
             for d in data:
                 val = tuple([d[i].value for i in subset])
@@ -202,9 +203,10 @@ cpdef tuple random_subset_dist(ddata, ddata_distr, int n, rand=Orange.misc.Rando
 #                                            ddata_sum)
 
 cdef int MC_ITERATIONS
-MC_ITERATIONS = 50
+#MC_ITERATIONS = 50
+MC_ITERATIONS = 1
 
-def build_min_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
+def build_minmax_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
     """
     Builds a list of subsets of different sizes minimized in terms of Hellinger
     distance from the whole dataset. Uses Monte Carlo approach.
@@ -217,49 +219,27 @@ def build_min_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random
                    method=Orange.feature.discretization.EqualFreq(n=len(data)))
     ddata_distr = data_distribution(ddata)
 
-    subsets_list = []
+    min_subsets_list = []
+    max_subsets_list = []
     if not subset_sizes:
         subset_sizes = range(len(data)+1)
     for i in subset_sizes:
         min_subset, min_d = random_subset_dist(ddata, ddata_distr,
                                                i, rand)
+        max_subset, max_d = min_subset, min_d
         for j in range(MC_ITERATIONS-1):
             subset, d = random_subset_dist(ddata, ddata_distr,
                                            i, rand)
             if d < min_d:
                 min_subset = subset
                 min_d = d
-        subsets_list.append((min_subset, min_d))
-    return subsets_list
-
-def build_max_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
-    """
-    Builds a list of subsets of different sizes maximized in terms of Hellinger
-    distance from the whole dataset. Uses Monte Carlo approach.
-    """
-    cdef int i, j
-    cdef double d, max_d
-    cdef list subsets_list
-    
-    ddata = Orange.data.discretization.DiscretizeTable(data,
-                   method=Orange.feature.discretization.EqualFreq(n=len(data)))
-    ddata_distr = data_distribution(ddata)
-
-    subsets_list = []
-    if not subset_sizes:
-        subset_sizes = range(len(data)+1)
-    for i in subset_sizes:
-        max_subset, max_d = random_subset_dist(ddata, ddata_distr,
-                                               i, rand)
-        for j in range(MC_ITERATIONS-1):
-            subset, d = random_subset_dist(ddata, ddata_distr,
-                                               i, rand)
             if d > max_d:
                 max_subset = subset
                 max_d = d
-        subsets_list.append((max_subset, max_d))
-    return subsets_list
-   
+        min_subsets_list.append((min_subset, min_d))
+        max_subsets_list.append((max_subset, max_d))
+    return (min_subsets_list, max_subsets_list)
+
 def build_subsets_dec_dist(data, minimalize=True):
     """
     Builds a list of subsets of the whole dataset iteratively using greedy approach

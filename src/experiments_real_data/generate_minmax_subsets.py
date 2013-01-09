@@ -24,8 +24,7 @@ if __name__ == '__main__':
     rand = Orange.misc.Random(0)
 
     subset_sizes = generate_sizes(len(data))
-    min_data = build_min_subsets_list_mc(data, subset_sizes, rand)
-    max_data = build_max_subsets_list_mc(data, subset_sizes, rand)
+    min_data, max_data = build_minmax_subsets_list_mc(data, subset_sizes, rand)
 
     data_path = "{0}_minmax_subsets.pkl".format(data_file)
 
