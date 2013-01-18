@@ -205,7 +205,10 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             ind = indices_gen(sn, rand, data)
             sn_data = data.select(ind, 0)
             sn_ddata = ddata.select(ind, 0)
-            dists.append(hellinger_distance(data_distribution(sn_ddata), ddata_distr))
+            sn_ddata_distr = data_distribution(sn_ddata)
+            dists.append(hellinger_distance(sn_ddata_distr, ddata_distr))
+
+            print fano_min_error(sn_ddata_distr, len(ddata.domain.class_var.values))
             
             classifiers = [l(sn_data) for l in LEARNERS]
             for j in xrange(len(LEARNERS)):

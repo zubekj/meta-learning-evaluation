@@ -2,6 +2,7 @@ import operator
 from itertools import imap, combinations
 from math import log
 from libc.math cimport sqrt
+from libc.math cimport log2
 import Orange
 
 def datasets_distance(set1, set2, metric_function):
@@ -42,12 +43,12 @@ cpdef dict data_distribution_nn(data):
     cdef list indices
     cdef dict distr, sdistr
 
-    n_attrs = len(data.domain)-1
+    n_attrs = len(data.domain)
     indices = range(n_attrs)
     distr = {}
     for subset_size in xrange(1, n_attrs+1):
         for subset in combinations(indices, subset_size):
-            subset += (n_attrs,)
+            #subset += (n_attrs-1,)
             sdistr = {}
             for d in data:
                 val = tuple([d[i].value for i in subset])
@@ -56,6 +57,29 @@ cpdef dict data_distribution_nn(data):
                 sdistr[val] += 1
             distr[subset] = sdistr
     return distr
+
+def kirkwood_approx(var_set, instance, distr):
+    """
+    Kirkwood approximation of joint probability.
+    var_set -- joint variables set
+    instance -- instantiation of all attributes values
+    distr -- known joint probability distributions
+    """
+    return reduce(operator.div, (subsets_prob_product(i, var_set, instance, distr)
+                                 for i in xrange(len(var_set)-1, 0, -1)))
+
+def subsets_prob_product(n, var_set, instance, distr):
+    return reduce(operator.mul, (prob(vs, instance, distr)
+                                 for vs in combinations(var_set, n)))
+
+cpdef double prob(var_set, instance, distr):
+    if var_set in distr:
+        val = tuple([instance[i].value for i in var_set])
+        if val in distr[var_set]:
+            return distr[var_set][val]
+        elif len(var_set) == 1:
+            return 0.0
+    return kirkwood_approx(var_set, instance, distr)
 
 cpdef dict normalize_distribution(distr, int n):
     return {subset: {val: (float(count) / n)
@@ -71,7 +95,8 @@ cpdef dict data_distribution(data):
     cdef dict distr
 
     distr = data_distribution_nn(data)
-    n = len(data) * len(distr)
+    #n = len(data) * len(distr)
+    n = len(data)
     for subset in distr:
         for val in distr[subset]:
             distr[subset][val] = float(distr[subset][val]) / n
@@ -135,6 +160,30 @@ cpdef double hellinger_distance_p(dict distr1, dict distr2):
             b = distr2[v]
             s += b
     return s
+
+cdef double cond_entropy(dict distr):
+    """
+    Calculates conditional entropy H(Y|X), where Y is the class variable and X
+    the vector of attributes.
+    """
+    cdef double s, p_xy, p_x
+    cdef tuple k1, k2, l 
+    s = 0
+    for k1 in distr:
+        for k2 in distr[k1]:
+            p_xy = distr[k1][k2]
+            p_x = 0
+            for l in distr[k1]:
+                if l[:-1] == k2[:-1]:
+                    p_x += distr[k1][l]
+            s += p_xy * log2(p_x / p_xy)
+    return s
+
+cpdef double fano_min_error(dict distr, int class_n):
+    return (cond_entropy(distr) - 1) / log2(class_n)
+
+#cpdef str bayes_max_class(dict distr):
+    
 
 cpdef double cdistr_total_sum(dict cdistr):
     cdef double total_sum, v
@@ -203,8 +252,8 @@ cpdef tuple random_subset_dist(ddata, ddata_distr, int n, rand=Orange.misc.Rando
 #                                            ddata_sum)
 
 cdef int MC_ITERATIONS
-#MC_ITERATIONS = 50
-MC_ITERATIONS = 1
+MC_ITERATIONS = 50
+#MC_ITERATIONS = 1
 
 def build_minmax_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
     """
