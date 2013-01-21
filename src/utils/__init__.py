@@ -1,2 +1,2 @@
-__all__ = ['ensemble', 'similarity', 'cSimilarity']
+__all__ = ['ensemble', 'similarity', 'cSimilarity', 'distribution']
 
