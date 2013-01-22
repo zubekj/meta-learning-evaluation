@@ -16,6 +16,9 @@ class TestDistribution(unittest.TestCase):
         self.assertEqual(jd.density({0: 5.0, 1: 2.0}), 1.0)
         self.assertEqual(jd.density({0: 6.0, 1: 2.0}), 0.0)
         self.assertEqual(jd.density({0: 6.0, 4: 1.0}), 4.0)
+        self.assertAlmostEqual(jd.density({0: 6.0, 1: 4.0, 2: 3.0}), 0.16666666)
+        self.assertAlmostEqual(jd.density({0: 6.0, 1: 2.0, 2: 3.0}), 0.0)
+        self.assertAlmostEqual(jd.density({0: 6.0, 1: 0.0, 2: 3.0}), 0.0)
 
 if __name__ == '__main__':
     unittest.main()
