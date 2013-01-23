@@ -15,7 +15,7 @@ from utils.distribution import JointDistributions
 
 
 def float2digits(num):
-    return [int(c) for c in "{0:.3f}".format(num) if not c in ('-', '.')]
+    return [int(c) for c in "{0:.4f}".format(num) if not c in ('-', '.')]
 
 def digits2float(digits, leading=0):
     digits = list(digits)
@@ -25,31 +25,31 @@ def digits2float(digits, leading=0):
 mean = 0
 sigma = math.sqrt(1)
 
-variables = [Orange.feature.Continuous("d{0}".format(i)) for i in xrange(3)]
+variables = [Orange.feature.Continuous("d{0}".format(i)) for i in xrange(5)]
 domain = Orange.data.Domain(variables)
 
 matrix = []
 
-for i in xrange(10000):
+for i in xrange(1000):
     r = random.normalvariate(mean,sigma)
-    d = float2digits(r)[:3]
+    d = float2digits(r)[:5]
     matrix.append(d)
 
 data = Orange.data.Table(domain, matrix)
 
-jd = JointDistributions(data, kirkwood_level=4)
+jd = JointDistributions(data, kirkwood_level=6)
 
-x = np.linspace(0,4,100)
-e1 = np.array([jd.density(dict(zip(xrange(3), float2digits(xi)))) for xi in x])
-e1 = e1 / (np.sum(e1) * 0.01 * 4)
+x = np.linspace(0,3,100)
+#e1 = np.array([jd.density(dict(zip(xrange(5), float2digits(xi)))) for xi in x])
+#e1 = e1 / (np.sum(e1) * 0.01 * 4)
 
-jd.kirkwood_level = 3
-e2 = np.array([jd.density(dict(zip(xrange(3), float2digits(xi)))) for xi in x])
+jd.kirkwood_level = 2 
+e2 = np.array([jd.density(dict(zip(xrange(5), float2digits(xi)))) for xi in x])
 e2 = e2 / (np.sum(e2) * 0.01 * 4)
 
 
 plt.plot(x,e2, color="blue")
-plt.plot(x,e1, color="green")
+#plt.plot(x,e1, color="green")
 plt.plot(x,mlab.normpdf(x,mean,sigma)*2, color="red")
 
 plt.show()

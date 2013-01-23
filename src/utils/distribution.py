@@ -22,6 +22,7 @@ class JointDistributions():
         self.kirkwood_level = kirkwood_level
         self.data = data
         self.interpolators = {}
+        self.cache = {}
 
     def density(self, attrs_vals):
         """
@@ -44,7 +45,6 @@ class JointDistributions():
         else:
             k = self._kirkwood_approx(attrs, vals)
             r = k if not (math.isnan(k) or math.isinf(k)) else 0.0
-        #print attrs, vals, r
         return r
 
     def _interpolated_density(self, attrs, vals):
@@ -55,21 +55,23 @@ class JointDistributions():
                 if key not in freqs:
                     freqs[key] = 0
                 freqs[key] += 1
-            v = np.array(freqs.values())
             if len(attrs) == 1:
-                a = np.array(sorted(k[0] for k in freqs.keys()))
-                # TODO: Error in interpolation
+                sorted_keys = sorted(k[0] for k in freqs.keys())
+                a = np.array(sorted_keys)
+                v = np.array([freqs[(k,)] for k in sorted_keys])
                 interp_fun = interp1d(a, v, bounds_error=False, fill_value=0.0)
                 self.interpolators[attrs] = lambda x: interp_fun(x)[0]
             else:
                 a = np.array(freqs.keys())
+                v = np.array(freqs.values())
+                # TODO: Add border points to extend convex hull.
                 self.interpolators[attrs] = LinearNDInterpolator(a, v, 0.0)
         return self.interpolators[attrs](vals)
     
     def _kirkwood_approx(self, attrs, vals):
-        return reduce(operator.div,
+        return reduce(lambda acc, val: val / acc,
                 (reduce(operator.mul,
                     (self._density((attrs[i] for i in indices),
                         (vals[i] for i in indices))
                         for indices in combinations(range(len(attrs)), n)))
-                    for n in xrange(len(attrs)-1, 0, -1)))
+                    for n in xrange(1,len(attrs))))
