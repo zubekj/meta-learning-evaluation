@@ -11,7 +11,7 @@ import Orange
 
 sys.path.append('../')
 
-from utils.distribution import JointDistributions
+from utils.distribution import *
 
 def gauss_digits(n, k_level):
 
@@ -62,7 +62,7 @@ def iris_approx():
                  method=Orange.feature.discretization.EqualWidth(n=len(data)/15))
 
     jd = JointDistributions(data, 5)
-  
+
     jd.kirkwood_level = 5
     distinct_values = set(tuple((i, float(d[i])) for i in xrange(4)) for d in data)
     e1 = np.array([jd.margin_density(dict(e)) for e in distinct_values])
