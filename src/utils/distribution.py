@@ -23,6 +23,7 @@ class JointDistributions():
         self.data = data
         self.interpolators = {}
         self.freqs = {}
+        self.k_cache = {}
 
     def density(self, vals):
         """
@@ -98,12 +99,17 @@ class JointDistributions():
             yield tuple(points[i][j] for j,i in enumerate(indices))
 
     def _kirkwood_approx(self, attrs, vals):
-        return reduce(lambda acc, val: (val / acc) if acc > 0.0 else 0.0,
-                (reduce(operator.mul,
-                    (self._density((attrs[i] for i in indices),
-                        (vals[i] for i in indices))
-                        for indices in combinations(range(len(attrs)), n)))
-                    for n in xrange(1,len(attrs))))
+        k = (attrs, vals)
+        if not k in self.k_cache:
+            r = reduce(lambda acc, val: (val / acc) if acc > 0.0 else 0.0,
+                    (reduce(operator.mul,
+                        (self._density((attrs[i] for i in indices),
+                            (vals[i] for i in indices))
+                            for indices in combinations(range(len(attrs)), n)))
+                        for n in xrange(1,len(attrs))))
+            self.k_cache[k] = r
+            return r
+        return self.k_cache[k]
 
 
 def hellinger_distance(distr1, distr2, data):
