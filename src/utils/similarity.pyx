@@ -45,6 +45,8 @@ cpdef dict data_distribution_nn(data):
 
     n_attrs = len(data.domain)
     indices = range(n_attrs)
+    #if n_attrs > 3:
+    #  n_attrs = 3
     distr = {}
     for subset_size in xrange(1, n_attrs+1):
         for subset in combinations(indices, subset_size):
@@ -95,8 +97,8 @@ cpdef dict data_distribution(data):
     cdef dict distr
 
     distr = data_distribution_nn(data)
-    #n = len(data) * len(distr)
-    n = len(data)
+    n = len(data) * len(distr)
+    #n = len(data)
     for subset in distr:
         for val in distr[subset]:
             distr[subset][val] = float(distr[subset][val]) / n
@@ -265,7 +267,9 @@ def build_minmax_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Ran
     cdef list subsets_list
 
     ddata = Orange.data.discretization.DiscretizeTable(data,
-                   method=Orange.feature.discretization.EqualFreq(n=len(data)))
+                   method=Orange.feature.discretization.EqualWidth(n=len(data)/20))
+    #ddata = Orange.data.discretization.DiscretizeTable(data,
+    #               method=Orange.feature.discretization.EqualFreq(n=len(data)))
     ddata_distr = data_distribution(ddata)
 
     min_subsets_list = []

@@ -121,8 +121,8 @@ def hellinger_distance(distr1, distr2, data):
 
 ####
 
-#MC_ITERATIONS = 50
-MC_ITERATIONS = 10
+MC_ITERATIONS = 50
+#MC_ITERATIONS = 10
 
 def indices_gen(p, rand, data):
     n = len(data)
@@ -143,15 +143,7 @@ def combined_distribution(distr, level, distr_space):
         for c in combinations(indices, j):
             for d in distr_space[:,list(c)]:
                 l.append(distr._freqs_density(c, tuple(d)))
-#            for d in distr_space:
-#                l.append(distr._freqs_density(c, tuple(float(d[i]) for i in c)))
     return np.array(l)
-
-#    return np.array([distr._freqs_density(c, tuple(float(d[i]) for i in c))
-#                     for j in xrange(1,level+1)
-#                     for c in combinations(indices, j)
-#                     for d in distr_space])
-
 
 def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level):
     """
@@ -162,7 +154,6 @@ def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level):
     n = int(n)
     sdata = ddata[random.sample(xrange(len(ddata)), n)]
     sdata_distr = JointDistributions(sdata)
-    #sd_vals = np.array([sdata_distr.density(d) for d in distr_space])
     sd_vals = combined_distribution(sdata_distr, level, distr_space)
     sd_vals /= np.sum(sd_vals)
     r = np.sqrt(sd_vals) - dd_sq_vals
@@ -189,11 +180,8 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
         unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
         return unique_a.view(a.dtype).reshape((unique_a.shape[0], a.shape[1]))
 
-    #distr_space = ddata.getItems(range(len(ddata)))
     distr_space = unique_rows(ddata)
-    #distr_space.remove_duplicates()
     
-    #dd_sq_vals = np.array([ddata_distr.density(d) for d in distr_space])
     dd_sq_vals = combined_distribution(ddata_distr, level, distr_space)
     dd_sq_vals /= np.sum(dd_sq_vals)
     dd_sq_vals = np.sqrt(dd_sq_vals)
