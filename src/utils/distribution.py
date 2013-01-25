@@ -1,5 +1,7 @@
 import operator
-from math import sqrt
+import random
+from collections import defaultdict
+from math import sqrt, factorial
 from itertools import combinations, product
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator, interp1d, NearestNDInterpolator
@@ -11,7 +13,7 @@ class JointDistributions():
     over a data set.
     """
 
-    def __init__(self, data, kirkwood_level=3):
+    def __init__(self, data, kirkwood_level=None):
         """
         Constructs an instance of JointDistributions from the given data set.
 
@@ -35,7 +37,7 @@ class JointDistributions():
         Returns:
             density function value.
         """
-        return self._density(xrange(len(vals)), (round(float(v), 4) for v in vals))
+        return self._density(xrange(len(vals)), (float(v) for v in vals))
 
     def margin_density(self, attrs_vals):
         """
@@ -53,7 +55,7 @@ class JointDistributions():
     def _density(self, attrs, vals):
         attrs = tuple(attrs)
         vals = tuple(vals)
-        if len(attrs) < self.kirkwood_level:
+        if self.kirkwood_level and len(attrs) < self.kirkwood_level:
             r = self._freqs_density(attrs, vals)
         else:
             r = self._kirkwood_approx(attrs, vals)
@@ -61,12 +63,9 @@ class JointDistributions():
 
     def _freqs_density(self, attrs, vals):
         if not attrs in self.freqs:
-            fq = {}
-            for d in self.data:
-                key = tuple(round(float(d[a]), 4) for a in attrs)
-                if key not in fq:
-                    fq[key] = 0
-                fq[key] += 1
+            fq = defaultdict(int)
+            for d in self.data[:,list(attrs)]:
+                fq[tuple(d)] += 1
             #self._build_interpolator(attrs, fq)
             self.freqs[attrs] = fq
         if vals in self.freqs[attrs]:
@@ -113,8 +112,6 @@ class JointDistributions():
 
 
 def hellinger_distance(distr1, distr2, data):
-    data = data.getItems(range(len(data)))
-    data.remove_duplicates()
     e1 = np.array([distr1.density(d) for d in data])
     e1 = e1 / np.sum(e1)
     e2 = np.array([distr2.density(d) for d in data])
@@ -139,47 +136,84 @@ def indices_gen(p, rand, data):
     indices2.random_generator = rand
     return indices2(data)
 
-def random_subset_dist(ddata, ddata_distr, n, kirkwood_level, rand=Orange.misc.Random(0)):
+def combined_distribution(distr, level, distr_space):
+    indices = range(len(distr.data[0]))
+    l = []
+    for j in xrange(1,level+1):
+        for c in combinations(indices, j):
+            for d in distr_space[:,list(c)]:
+                l.append(distr._freqs_density(c, tuple(d)))
+#            for d in distr_space:
+#                l.append(distr._freqs_density(c, tuple(float(d[i]) for i in c)))
+    return np.array(l)
+
+#    return np.array([distr._freqs_density(c, tuple(float(d[i]) for i in c))
+#                     for j in xrange(1,level+1)
+#                     for c in combinations(indices, j)
+#                     for d in distr_space])
+
+
+def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level):
     """
     Draws a random subset of size n from the data and returns it along with its Hellinger
-    distance from the whole dataset. Subset is represented with binary mask; 1 at i-th place
+    distance from the whole dataset. Subset is represented with binary mask; 2 at i-th place
     means that i-th example belongs to the subset.
     """
     n = int(n)
-    smask = indices_gen(n, rand, ddata)
-    sdata = ddata.select(smask, 0)
-    sdata_distr = JointDistributions(sdata, kirkwood_level)
-    return smask, hellinger_distance(sdata_distr, ddata_distr, ddata)
+    sdata = ddata[random.sample(xrange(len(ddata)), n)]
+    sdata_distr = JointDistributions(sdata)
+    #sd_vals = np.array([sdata_distr.density(d) for d in distr_space])
+    sd_vals = combined_distribution(sdata_distr, level, distr_space)
+    sd_vals /= np.sum(sd_vals)
+    r = np.sqrt(sd_vals) - dd_sq_vals
+    dist = np.sqrt(np.sum(np.multiply(r,r))/2)
+    return dist
 
-def build_minmax_subsets_list_mc(data, subset_sizes = None, rand=Orange.misc.Random(0)):
+def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     """
     Builds a list of subsets of different sizes minimizing and maximazing Hellinger
     distance from the whole dataset. Uses Monte Carlo approach.
     """
     if not subset_sizes:
         subset_sizes = range(len(data)+1)
-    
+   
+    if level > len(data.domain):
+        level = len(data.domain)
+
     ddata = Orange.data.discretization.DiscretizeTable(data,
                    method=Orange.feature.discretization.EqualWidth(n=len(data)/10))
-    level = 5
-    ddata_distr = JointDistributions(ddata, kirkwood_level=level)
+    ddata = np.array([tuple(float(d[i]) for i in xrange(len(ddata.domain))) for d in ddata])
+    ddata_distr = JointDistributions(ddata)
 
+    def unique_rows(a):
+        unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
+        return unique_a.view(a.dtype).reshape((unique_a.shape[0], a.shape[1]))
+
+    #distr_space = ddata.getItems(range(len(ddata)))
+    distr_space = unique_rows(ddata)
+    #distr_space.remove_duplicates()
+    
+    #dd_sq_vals = np.array([ddata_distr.density(d) for d in distr_space])
+    dd_sq_vals = combined_distribution(ddata_distr, level, distr_space)
+    dd_sq_vals /= np.sum(dd_sq_vals)
+    dd_sq_vals = np.sqrt(dd_sq_vals)
+    
     min_subsets_list = []
     max_subsets_list = []
 
     for i in subset_sizes:
-        min_subset, min_d = random_subset_dist(ddata, ddata_distr,
-                                               i, level, rand)
-        max_subset, max_d = min_subset, min_d
+        min_d = random_subset_dist(ddata, distr_space,
+                                               dd_sq_vals,
+                                               i, level)
+        max_d = min_d
         for j in range(MC_ITERATIONS-1):
-            subset, d = random_subset_dist(ddata, ddata_distr,
-                                           i, rand)
+            d = random_subset_dist(ddata, distr_space,
+                                           dd_sq_vals,
+                                           i, level)
             if d < min_d:
-                min_subset = subset
                 min_d = d
             if d > max_d:
-                max_subset = subset
                 max_d = d
-        min_subsets_list.append((min_subset, min_d))
-        max_subsets_list.append((max_subset, max_d))
+        min_subsets_list.append(min_d)
+        max_subsets_list.append(max_d)
     return (min_subsets_list, max_subsets_list)
