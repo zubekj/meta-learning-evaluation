@@ -63,5 +63,18 @@ class TestEnsemble(unittest.TestCase):
         probs = c(i, Orange.classification.Classifier.GetProbabilities).values()
         self.assertAlmostEqual(probs[0], 0.66666668)
 
+    def test_threshold_classifier(self):
+        c = MajorityVoteClassifier([self.c0, self.c1, self.c1, self.c1])
+        i = self.data[0]
+        probs = c(i, Orange.classification.Classifier.GetProbabilities).values()
+        self.assertEqual(probs[0], 0.25)
+        self.assertEqual(probs[1], 0.75)
+        tc = ThresholdClassifier(c)
+        self.assertEqual(c(i), self.class1)
+        self.assertEqual(tc(i), self.class1)
+        tc.threshold = 0.8
+        self.assertEqual(tc(i), self.class0)
+
+
 if __name__ == '__main__':
     unittest.main()

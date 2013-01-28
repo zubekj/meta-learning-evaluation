@@ -14,13 +14,13 @@ class MajorityVoteClassifier(Orange.ensemble.bagging.BaggedClassifier):
             class_var = classifiers[0].class_var
         super(MajorityVoteClassifier, self).__init__(classifiers, name,
                                                      class_var)
-    
+
 class RandomDecidesClassifier(Orange.classification.Classifier):
     """
     Returns the response of a random classifier from classifiers passed
     to the constructor.
     """
-    
+
     def __init__(self, classifiers, rand=Orange.misc.Random(42),
                  name="RandomDecidesClassifier"):
         self.name = name
@@ -74,7 +74,7 @@ class WeightedVoteClassifier(Orange.classification.Classifier):
         cprob.normalize()
         cval = Orange.data.Value(instance.domain.class_var, cprob.values().index(max(cprob)))
 
-        if result_type == Classifier.GetValue:    
+        if result_type == Classifier.GetValue:
             return cval
         elif result_type == Classifier.GetProbabilities:
             return cprob
@@ -112,9 +112,35 @@ class WeightedConfidenceSharingClassifier(Orange.classification.Classifier):
         cprob.normalize()
         cval = Orange.data.Value(instance.domain.class_var, cprob.values().index(max(cprob)))
 
-        if result_type == Classifier.GetValue:    
+        if result_type == Classifier.GetValue:
             return cval
         elif result_type == Classifier.GetProbabilities:
             return cprob
+        else:
+            return [cval, cprob]
+
+class ThresholdClassifier(Orange.classification.Classifier):
+    """
+    Wrapper for constructed classifiers which allows to adjust threshold for binary
+    classification. If the probability for positive class returned by base classifier
+    is above the threshold positive is returned, otherwise negative.
+    """
+
+    def __init__(self, base_classifier, threshold=0.5, name="ThresholdClassifier"):
+        self.name = name
+        self.base_classifier = base_classifier
+        self.threshold = threshold
+
+    def __call__(self, instance, result_type=Classifier.GetValue):
+        # Multi-class problems are not supported.
+        domain = instance.domain
+        if result_type == Classifier.GetProbabilities or domain.class_vars \
+                or len(domain.class_var.values) > 2:
+            return self.base_classifier(instance, result_type)
+        
+        cprob = self.base_classifier(instance, Classifier.GetProbabilities)
+        cval = Orange.data.Value(domain.class_var, 1 if cprob[1] > self.threshold else 0)
+        if result_type == Classifier.GetValue:
+            return cval
         else:
             return [cval, cprob]
