@@ -145,7 +145,7 @@ def combined_distribution(distr, level, distr_space):
                 l.append(distr._freqs_density(c, tuple(d)))
     return np.array(l)
 
-def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level):
+def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations):
     """
     Draws a random subset of size n from the data and returns it along with its Hellinger
     distance from the whole dataset. Subset is represented with binary mask; 2 at i-th place
@@ -157,7 +157,7 @@ def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level):
     sd_vals = combined_distribution(sdata_distr, level, distr_space)
     sd_vals /= np.sum(sd_vals)
     r = np.sqrt(sd_vals) - dd_sq_vals
-    dist = np.sqrt(np.sum(np.multiply(r,r))/2)
+    dist = np.sqrt(np.sum(np.multiply(r,r))/2/n_combinations)
     return dist
 
 def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
@@ -168,8 +168,12 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     if not subset_sizes:
         subset_sizes = range(len(data)+1)
    
-    if level > len(data.domain):
-        level = len(data.domain)
+    l_domain = len(data.domain)
+
+    if level > l_domain:
+        level = l_domain
+
+    n_combinations = factorial(l_domain)/factorial(level)/factorial(l_domain-level)
 
     ddata = Orange.data.discretization.DiscretizeTable(data,
                    method=Orange.feature.discretization.EqualWidth(n=len(data)/10))
@@ -190,14 +194,12 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     max_subsets_list = []
 
     for i in subset_sizes:
-        min_d = random_subset_dist(ddata, distr_space,
-                                               dd_sq_vals,
-                                               i, level)
+        min_d = random_subset_dist(ddata, distr_space, dd_sq_vals, i,
+                                   level, n_combinations)
         max_d = min_d
         for j in range(MC_ITERATIONS-1):
-            d = random_subset_dist(ddata, distr_space,
-                                           dd_sq_vals,
-                                           i, level)
+            d = random_subset_dist(ddata, distr_space, dd_sq_vals, i,
+                                   level, n_combinations)
             if d < min_d:
                 min_d = d
             if d > max_d:

@@ -208,7 +208,7 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
             sn_ddata_distr = data_distribution(sn_ddata)
             dists.append(hellinger_distance(sn_ddata_distr, ddata_distr))
 
-            print fano_min_error(sn_ddata_distr, len(ddata.domain.class_var.values))
+            #print fano_min_error(sn_ddata_distr, len(ddata.domain.class_var.values))
             
             classifiers = [l(sn_data) for l in LEARNERS]
             for j in xrange(len(LEARNERS)):
@@ -228,7 +228,7 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
                 sample_results[i][classifier] = {}
                 sample_results[i][classifier]['CA'] = CAs[idx]
         
-        mean_results = evaluate.dict_recur_mean_err(sample_results.values())   
+        mean_results = evaluate.dict_recur_mean_err(sample_results.values())
         mean_dist = float(sum(dists))/SAMPLE_SIZE
         results[mean_dist] = mean_results
 

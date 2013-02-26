@@ -52,5 +52,5 @@ if __name__ == '__main__':
     data = Orange.data.Table(data_file)
     subset_sizes = generate_sizes(len(data))
 
-    #plot_levels(range(1,6), subset_sizes, data_file)
-    plot_minmax(6, subset_sizes, data_file)
+    plot_levels(range(1,6), subset_sizes, data_file)
+    #plot_minmax(6, subset_sizes, data_file)
