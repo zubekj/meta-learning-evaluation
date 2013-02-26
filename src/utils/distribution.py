@@ -120,6 +120,9 @@ def hellinger_distance(distr1, distr2, data):
     return np.sqrt(np.sum(np.multiply(r,r))/2)
 
 ####
+def unique_rows(a):
+    unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
+    return unique_a.view(a.dtype).reshape((unique_a.shape[0], a.shape[1]))
 
 MC_ITERATIONS = 50
 #MC_ITERATIONS = 10
@@ -141,8 +144,12 @@ def combined_distribution(distr, level, distr_space):
     l = []
     for j in xrange(1,level+1):
         for c in combinations(indices, j):
+            visited = set()
             for d in distr_space[:,list(c)]:
-                l.append(distr._freqs_density(c, tuple(d)))
+                td = tuple(d)
+                if td not in visited:
+                    l.append(distr._freqs_density(c, td))
+                    visited.add(td)
     return np.array(l)
 
 def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations):
@@ -155,7 +162,7 @@ def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations)
     sdata = ddata[random.sample(xrange(len(ddata)), n)]
     sdata_distr = JointDistributions(sdata)
     sd_vals = combined_distribution(sdata_distr, level, distr_space)
-    sd_vals /= np.sum(sd_vals)
+    sd_vals /= n
     r = np.sqrt(sd_vals) - dd_sq_vals
     dist = np.sqrt(np.sum(np.multiply(r,r))/2/n_combinations)
     return dist
@@ -173,32 +180,28 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     if level > l_domain:
         level = l_domain
 
-    n_combinations = factorial(l_domain)/factorial(level)/factorial(l_domain-level)
+    n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
+                         for l in xrange(1, level+1))
 
     ddata = Orange.data.discretization.DiscretizeTable(data,
                    method=Orange.feature.discretization.EqualWidth(n=len(data)/10))
     ddata = np.array([tuple(float(d[i]) for i in xrange(len(ddata.domain))) for d in ddata])
     ddata_distr = JointDistributions(ddata)
 
-    def unique_rows(a):
-        unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
-        return unique_a.view(a.dtype).reshape((unique_a.shape[0], a.shape[1]))
+    dd_sq_vals = combined_distribution(ddata_distr, level, ddata)
 
-    distr_space = unique_rows(ddata)
-    
-    dd_sq_vals = combined_distribution(ddata_distr, level, distr_space)
-    dd_sq_vals /= np.sum(dd_sq_vals)
+    dd_sq_vals /= len(ddata)
     dd_sq_vals = np.sqrt(dd_sq_vals)
     
     min_subsets_list = []
     max_subsets_list = []
 
     for i in subset_sizes:
-        min_d = random_subset_dist(ddata, distr_space, dd_sq_vals, i,
+        min_d = random_subset_dist(ddata, ddata, dd_sq_vals, i,
                                    level, n_combinations)
         max_d = min_d
         for j in range(MC_ITERATIONS-1):
-            d = random_subset_dist(ddata, distr_space, dd_sq_vals, i,
+            d = random_subset_dist(ddata, ddata, dd_sq_vals, i,
                                    level, n_combinations)
             if d < min_d:
                 min_d = d
