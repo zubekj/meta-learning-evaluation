@@ -189,7 +189,6 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     ddata_distr = JointDistributions(ddata)
 
     dd_sq_vals = combined_distribution(ddata_distr, level, ddata)
-
     dd_sq_vals /= len(ddata)
     dd_sq_vals = np.sqrt(dd_sq_vals)
     

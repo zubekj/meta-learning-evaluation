@@ -14,6 +14,7 @@ sys.path.append('../')
 
 from utils.cSimilarity import *
 from utils.ensemble import *
+from utils.distribution import *
 import sdistances
 import evaluate
 
@@ -185,9 +186,22 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
     levels = 1
     results = {}
     dlen = len(data)
+    
+    level = 5
+    l_domain = len(data.domain)
+    n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
+                         for l in xrange(1, level+1))
+
     ddata = Orange.data.discretization.DiscretizeTable(data,
                 method=Orange.feature.discretization.EqualFreq(n=dlen))
-    ddata_distr = data_distribution(ddata)
+    ddata = np.array([tuple(float(d[i]) for i in xrange(len(ddata.domain))) for d in ddata])
+    #data = np.array([tuple(float(d[i]) for i in xrange(len(data.domain))) for d in data])
+    ddata_distr = JointDistributions(ddata)
+
+
+    dd_sq_vals = combined_distribution(ddata_distr, level, ddata)
+    dd_sq_vals /= len(ddata)
+    dd_sq_vals = np.sqrt(dd_sq_vals)
 
     mean_dist = None
 
@@ -202,11 +216,17 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
         sample_results = {}
         dists = []
         for i in xrange(SAMPLE_SIZE):
-            ind = indices_gen(sn, rand, data)
-            sn_data = data.select(ind, 0)
-            sn_ddata = ddata.select(ind, 0)
-            sn_ddata_distr = data_distribution(sn_ddata)
-            dists.append(hellinger_distance(sn_ddata_distr, ddata_distr))
+            ind = random.sample(xrange(len(data)), int(sn))
+            sn_data = data.get_items(ind)
+            sn_ddata = ddata[ind]
+            
+            # Calculating Hellinger distance.
+            sn_ddata_distr = JointDistributions(sn_ddata)
+            sd_vals = combined_distribution(sn_ddata_distr, level, ddata)
+            sd_vals /= sn
+            r = np.sqrt(sd_vals) - dd_sq_vals
+            dist = np.sqrt(np.sum(np.multiply(r,r))/2/n_combinations)
+            dists.append(dist)
 
             #print fano_min_error(sn_ddata_distr, len(ddata.domain.class_var.values))
             
