@@ -4,6 +4,8 @@ from matplotlib import pyplot
 from matplotlib.backends.backend_pdf import PdfPages
 import Orange
 
+import pycallgraph
+
 sys.path.append('../')
 
 from utils.distribution import *
@@ -22,7 +24,9 @@ def plot_levels(levels, subset_sizes, data_file):
     x = [int(size) for size in subset_sizes]
     colours = ["red", "green", "blue", "orange", "yellow", "black"]
     for l in levels:
+        #pycallgraph.start_trace()
         min_data, max_data = build_minmax_subsets_list_mc(data, l, subset_sizes)
+        #pycallgraph.make_dot_graph('g.png')
         pyplot.plot(x, max_data, color=colours[l % len(colours)])
     pp = PdfPages('{0}_levels.pdf'.format(data_file))
     pp.savefig()
@@ -52,5 +56,5 @@ if __name__ == '__main__':
     data = Orange.data.Table(data_file)
     subset_sizes = generate_sizes(len(data))
 
-    plot_levels(range(1,6), subset_sizes, data_file)
+    plot_levels(range(1,2), subset_sizes, data_file)
     #plot_minmax(6, subset_sizes, data_file)

@@ -189,6 +189,8 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
     
     level = 5
     l_domain = len(data.domain)
+    if level > l_domain:
+        level = l_domain
     n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
                          for l in xrange(1, level+1))
 
