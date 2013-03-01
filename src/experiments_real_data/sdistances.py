@@ -13,6 +13,8 @@ class HDistanceConverter(object):
         self.ssizes = a[:,1]
        
     def subset_size(self, hdist):
+        # Scale hdist to avalaible hdistances range.
+        hdist = hdist * (self.hdistances.max() - self.hdistances.min()) + self.hdistances.min()
         i = bisect.bisect_right(self.hdistances, hdist)
         if i == len(self.ssizes):
             return self.ssizes[i-1]

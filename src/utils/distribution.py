@@ -62,25 +62,20 @@ class JointDistributions():
             r = self._kirkwood_approx(attrs, vals)
         return r
 
-    def _freqs_cond_density(self, attrs, vals, cattrs, cvals):
-        if not cattrs in self.cond_freqs:
-            self.cond_freqs[cattrs] = {}
-        if not cvals in self.cond_freqs[cattrs]:
-            self.cond_freqs[cattrs][cvals] = {}
-        if not attrs in self.cond_freqs[cattrs][cvals]:
-            # Select rows with cattrs == cvals:
-            if len(cattrs) > 1:
-                idx = np.all(self.data[:,cattrs] == cvals, axis=1)
-            else:
-                idx = (self.data[:,cattrs[0]] == cvals[0])
+    def _freqs_cond_density(self, attrs, vals, cattr, cval):
+        if not cattr in self.cond_freqs:
+            self.cond_freqs[cattr] = {}
+        if not cval in self.cond_freqs[cattr]:
+            self.cond_freqs[cattr][cval] = {}
+        if not attrs in self.cond_freqs[cattr][cval]:
             fq = defaultdict(int)
             csum = 0
-            for d in self.data[idx, :][:, attrs]:
+            for d in self.data[self.data[:,cattr]==cval, :][:, attrs]:
                 csum += 1
                 fq[tuple(d.flat)] += 1
             fq["sum"] = csum
-            self.cond_freqs[cattrs][cvals][attrs] = fq
-        d = self.cond_freqs[cattrs][cvals][attrs]
+            self.cond_freqs[cattr][cval][attrs] = fq
+        d = self.cond_freqs[cattr][cval][attrs]
         if vals in d:
             return float(d[vals])/d["sum"]
         return 0.0
@@ -163,52 +158,41 @@ def indices_gen(p, rand, data):
     indices2.random_generator = rand
     return indices2(data)
 
-#def combined_distribution(distr, level, distr_space):
+def combined_distribution(distr, level, distr_space):
+    indices = range(len(distr.data[0])-1)
+    l = []
+    for j in xrange(1,level+1):
+        for c in combinations(indices, j):
+            visited = set()
+            for d in distr_space[:,list(c)]:
+                td = tuple(d)
+                if td not in visited:
+                    l.append(distr._freqs_density(c, td))
+                    visited.add(td)
+    return np.array(l)
+
+#def combined_distribution(distr, level, distr_space, class_vals):
 #    """
 #    Calculates conditional probability distributions of all combinations of at most
 #    'level' attributes depending on the class value.
 #    """
 #    indices = range(len(distr.data[0])-1)
+#    class_idx = len(distr.data[0])-1
+#
 #    l = []
 #    for j in xrange(1,level+1):
 #        for c in combinations(indices, j):
-#            visited = set()
-#            for d in distr_space[:,list(c)]:
-#                td = tuple(d)
-#                if td not in visited:
-#                    l.append(distr._freqs_density(c, td))
-#                    visited.add(td)
+#            idx = c + (class_idx,)
+#            for class_val in class_vals:
+#                visited = set()
+#                for d in distr_space[:,idx]:
+#                    td = tuple(d.flat)
+#                    if td not in visited:
+#                        l.append(distr._freqs_cond_density(idx, td, class_idx, class_val))
+#                        visited.add(td)
 #    return np.array(l)
 
-def combined_distribution(distr, level, distr_space, class_vals):
-    """
-    Calculates conditional probability distributions of all combinations of at most
-    'level' attributes depending on the class value.
-    """
-    indices = range(len(distr.data[0])-1)
-    class_idx = len(distr.data[0])-1
-
-#    class_counts = defaultdict(int)
-#    for v in distr.data[:,class_idx]:
-#        class_counts[v] += 1
-#    for c in class_vals:
-#        if class_counts[c] == 0:
-#            class_counts[c] = 1
-
-    l = []
-    for j in xrange(1,level+1):
-        for c in combinations(indices, j):
-            idx = c + (class_idx,)
-            for class_val in class_vals:
-                visited = set()
-                for d in distr_space[:,idx]:
-                    td = tuple(d.flat)
-                    if td not in visited:
-                        l.append(distr._freqs_cond_density(idx, td, (class_idx,), (class_val,)))
-                        visited.add(td)
-    return np.array(l)
-
-def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations, class_vals):
+def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations):
     """
     Draws a random subset of size n from the data and returns it along with its Hellinger
     distance from the whole dataset. Subset is represented with binary mask; 2 at i-th place
@@ -217,8 +201,8 @@ def random_subset_dist(ddata, distr_space, dd_sq_vals, n, level, n_combinations,
     n = int(n)
     sdata = ddata[random.sample(xrange(len(ddata)), n)]
     sdata_distr = JointDistributions(sdata)
-    sd_vals = combined_distribution(sdata_distr, level, distr_space, class_vals)
-    #sd_vals /= n
+    sd_vals = combined_distribution(sdata_distr, level, distr_space)
+    sd_vals /= n
     r = np.sqrt(sd_vals) - dd_sq_vals
     dist = np.sqrt(np.sum(np.multiply(r,r))/2/n_combinations)
     return dist
@@ -237,16 +221,18 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
     if level > l_domain-1:
         level = l_domain-1
 
+    #n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
+    #                     for l in xrange(1, level+1))*len(class_vals)
     n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
-                         for l in xrange(1, level+1))*len(class_vals)
+                         for l in xrange(1, level+1))
 
     ddata = Orange.data.discretization.DiscretizeTable(data,
                    method=Orange.feature.discretization.EqualWidth(n=len(data)/10))
     ddata = np.array([tuple(float(d[i]) for i in xrange(len(ddata.domain))) for d in ddata])
     ddata_distr = JointDistributions(ddata)
 
-    dd_sq_vals = combined_distribution(ddata_distr, level, ddata, class_vals)
-    #dd_sq_vals /= len(ddata)
+    dd_sq_vals = combined_distribution(ddata_distr, level, ddata)
+    dd_sq_vals /= len(ddata)
     dd_sq_vals = np.sqrt(dd_sq_vals)
     
     min_subsets_list = []
@@ -254,11 +240,11 @@ def build_minmax_subsets_list_mc(data, level, subset_sizes = None):
 
     for i in subset_sizes:
         min_d = random_subset_dist(ddata, ddata, dd_sq_vals, i,
-                                   level, n_combinations, class_vals)
+                                   level, n_combinations)
         max_d = min_d
         for j in range(MC_ITERATIONS-1):
             d = random_subset_dist(ddata, ddata, dd_sq_vals, i,
-                                   level, n_combinations, class_vals)
+                                   level, n_combinations)
             if d < min_d:
                 min_d = d
             if d > max_d:

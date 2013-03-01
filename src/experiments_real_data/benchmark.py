@@ -36,7 +36,7 @@ LEARNING_PROPORTION = 0.7
 GENERALIZATION_PROPORTION = 0.5
 GENERALIZED_SETS = 20
 LEARN_SUBSETS = [1 - math.log(x, 11) for x in xrange(10, 0, -1)] # Log scale
-HDISTANCES = [i*0.05 for i in xrange(20)] 
+HDISTANCES = [i*0.05 for i in xrange(18)] + [i*0.025 for i in xrange(36,41)]
 SAMPLE_SIZE = 10
 FEATURE_SUBSETS = [1.0]
 LEARNERS = [Orange.classification.bayes.NaiveLearner(name="bayes"),
@@ -189,8 +189,14 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
     
     level = 5
     l_domain = len(data.domain)
-    if level > l_domain:
-        level = l_domain
+
+    class_vals = tuple(float(i) for i in xrange(len(data.domain.class_var.values)))
+
+    if level > l_domain-1:
+        level = l_domain-1
+
+    #n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
+    #                     for l in xrange(1, level+1))*len(class_vals)
     n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
                          for l in xrange(1, level+1))
 
