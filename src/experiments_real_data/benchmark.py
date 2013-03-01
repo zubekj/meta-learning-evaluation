@@ -192,8 +192,8 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
 
     class_vals = tuple(float(i) for i in xrange(len(data.domain.class_var.values)))
 
-    if level > l_domain-1:
-        level = l_domain-1
+    if level > l_domain:
+        level = l_domain
 
     #n_combinations = sum(factorial(l_domain)/factorial(l)/factorial(l_domain-l)
     #                     for l in xrange(1, level+1))*len(class_vals)
