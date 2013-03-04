@@ -201,7 +201,7 @@ def benchmark_data_subsets_hellinger(data, rand, conv):
                          for l in xrange(1, level+1))
 
     ddata = Orange.data.discretization.DiscretizeTable(data,
-                method=Orange.feature.discretization.EqualFreq(n=dlen))
+                method=Orange.feature.discretization.EqualWidth(n=len(data)/10))
     ddata = np.array([tuple(float(d[i]) for i in xrange(len(ddata.domain))) for d in ddata])
     #data = np.array([tuple(float(d[i]) for i in xrange(len(data.domain))) for d in data])
     ddata_distr = JointDistributions(ddata)
