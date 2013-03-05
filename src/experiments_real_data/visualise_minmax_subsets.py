@@ -1,6 +1,9 @@
 import sys
 from itertools import izip
 import cPickle
+from numpy import genfromtxt
+from matplotlib import pyplot
+from matplotlib.backends.backend_pdf import PdfPages
 
 if __name__ == '__main__':
 
@@ -9,17 +12,15 @@ if __name__ == '__main__':
     else:
         data_file = "iris"
 
-    data_path = "{0}_minmax_subsets.pkl".format(data_file)
+    data = genfromtxt('{0}.tab'.format(data_file), delimiter=' ', skip_header=1)
+   
+    xvals = data[:,0]/data[-1,0]
 
-    data_file = open(data_path, "rb")
-    min_sets = cPickle.load(data_file)
-    max_sets = cPickle.load(data_file)
-    data_file.close()
-
-    print "Size Min_dist Max_dist"
-    for min_s, max_s in izip(min_sets, max_sets):
-        i = len(min_s[0]) - sum(min_s[0])
-        if i != len(max_s[0]) - sum(max_s[0]):
-            print "Inconsistent data"
-            exit(1)
-        print "{0} {1} {2}".format(i, min_s[1], max_s[1])
+    pyplot.plot(xvals, data[:,1], color="green")
+    pyplot.plot(xvals, data[:,2], color="red")
+    pyplot.xlabel("Subset size")
+    pyplot.ylabel("Hellinger distance")
+    pp = PdfPages('{0}_minmax.pdf'.format(data_file))
+    pp.savefig()
+    pp.close()
+    pyplot.close()

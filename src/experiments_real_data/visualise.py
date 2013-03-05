@@ -28,6 +28,7 @@ def plot_columns(array, columns_list, columns_names, filename, ylabel):
     ax.invert_xaxis()
     pyplot.xlabel("Hellinger distance")
     pyplot.ylabel(ylabel)
+    pyplot.ylim(ymax=1.0)
     pp = PdfPages(filename)
     pp.savefig()
     pp.close()
